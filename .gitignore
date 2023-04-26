@@ -1,0 +1,13 @@
+**/.idea
+**/__pycache__/
+**/data/
+**/.DS_Store
+**/results/
+**/experiment_results/
+**/.vscode
+**/leaf/
+**.egg-info
+2021**
+2022**
+**/massif.out*
+*swp
