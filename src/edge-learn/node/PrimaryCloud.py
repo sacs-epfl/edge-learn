@@ -3,11 +3,11 @@ from decentralizepy.communication.TCP import TCP
 
 class PrimaryCloud(Node):
     """
-    Defines the primary cloud node
+    Defines the primary cloud node, Would be the same as FederatedParameterServer, with compatibility modifications.
 
-    Define simple API
+    Connect only to edge servers.
 
     __init__() will be called when the process is spawned
 
-    UID = 0
+    UID = -1
     """

@@ -4,17 +4,12 @@ from decentralizepy.communication.TCP import TCP
 
 class EdgeServer(Node):
     """
-    This should ideally be similar to FederatedParameterServer
+    This should ideally be a mix of DPSGDNodeFederated FederatedParameterServer
 
-    For starters the graph here should represent a tree (or any other heirarchy).
-    UID 1->2^D
-
-    Heads up: The Graph is used by Communication module to instantiate socket connections.
+    TODO: Connect to primary cloud server and clients. See EdgeMapping.py for UIDs of primary cloud and clients.
+    
     There is also a synchronization barrier.
 
-    Define simple API for now
+    Send model down to clients, receive data samples from clients all clients, train, send model back to clients and primary server, download model from primary server, repeat.
 
-    Pointers: Can exchange data: up or down. Can also exchange models: up or down.
-
-    Can also act as aggregator for the models.
     """
