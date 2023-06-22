@@ -279,7 +279,8 @@ class Client(DPSGDNodeFederated):
                 results_dict["total_elapsed_time"][iteration + 1] = cur_time - start_time
                 start_time = cur_time
 
-                #TODO: Run Evaluation here
+                # Removed Evaluation TODO from here, add it to the edge server because all clients have the same model.
+                # Will have to use the timestamp of the client but accuracy of the edge server.
                 # Write model with a unique name using the round number and client uid to NFS
                 # Evaluate on another machine
                 
