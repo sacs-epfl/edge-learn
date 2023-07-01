@@ -36,6 +36,18 @@ class EdgeMapping(Mapping):
         self.local_clients = procs_per_machine
         self.global_service_machine = global_service_machine
         self.current_machine = current_machine
+    
+    def get_procs_per_machine(self):
+        """
+        Gives the number of processes per machine
+
+        Returns
+        -------
+        int
+            number of processes per machine
+
+        """
+        return self.procs_per_machine
 
     def get_uid(self, rank: int, machine_id: int):
         """
