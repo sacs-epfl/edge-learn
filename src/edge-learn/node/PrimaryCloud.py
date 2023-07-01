@@ -47,10 +47,10 @@ class PrimaryCloud(Node):
             if sender not in self.peer_deques:
                 self.peer_deques[sender] = deque()
 
-                if data["iteration"] == self.iteration:
-                    self.peer_deques[sender].appendLeft(data)
-                else:
-                    self.peer_deques[sender].append(data)
+            if data["iteration"] == self.iteration:
+                self.peer_deques[sender].appendLeft(data)
+            else:
+                self.peer_deques[sender].append(data)
         logging.debug("Received model from each edge server")
     
     def receive_from_all(self):

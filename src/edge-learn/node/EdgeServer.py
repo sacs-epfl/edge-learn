@@ -1,3 +1,4 @@
+from collections import deque
 from decentralizepy.node.Node import Node
 from decentralizepy.node.FederatedParameterServer import FederatedParameterServer
 from decentralizepy.communication.TCP import TCP
@@ -22,6 +23,7 @@ class EdgeServer(Node):
         while self.connected_to_primary_cloud:
             self.get_model_from_primary_cloud()
             self.get_data_from_clients()
+            self.create_batch()
             self.train()
             self.send_model_to_clients_and_primary_cloud()
             self.collect_stats()
@@ -42,13 +44,41 @@ class EdgeServer(Node):
         self.iteration = data["iteration"]
     
     def get_data_from_clients(self):
-        for client in self.clients:
+        while not self.receive_from_all_clients():
             sender, data = self.receive_channel("DATA")
-            batch = data["batch"]
-            # Somehow add data to the dataset and data to be trained on
+
+            if sender not in self.batches_received:
+                self.batches_received[sender] = deque()
+            
+            if data["iteration"] == self.iteration:
+                self.batches_received[sender].appendLeft(data)
+            else:
+                self.batches_received[sender].append(data)
+    
+    def receive_from_all_clients(self):
+        for k in self.my_neighbors:
+            if k == -1: continue
+            if (
+                (k not in self.peer_deques)
+                or len(self.peer_deques[k]) == 0
+                or self.peer_deques[k][0]["iteration"] != self.iteration
+            ):
+                return False
+        return True
+
+    def create_batch(self):
+        self.batch = dict()
+        for k in self.my_neighbors:
+            if k == -1: continue
+            data, target = self.peer_deques[k].popleft()
+            # TODO: check if this is the correct way to do this
+            self.batch[k] = dict()
+            self.batch[k]["data"] = data
+            self.batch[k]["target"] = target
 
     def train(self):
-        pass
+        data, target = self.batch
+        self.trainer.trainstep(data, target)
 
     def send_model_to_clients_and_primary_cloud(self):
         to_send = dict()
@@ -186,6 +216,8 @@ class EdgeServer(Node):
             weights_store_dir,
             train_evaluate_after,
         )
+
+        self.batches_received = deque()
 
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
