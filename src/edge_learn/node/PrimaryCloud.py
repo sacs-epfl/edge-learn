@@ -130,6 +130,9 @@ class PrimaryCloud(Node):
         log_level=logging.INFO,
         *args
     ):
+        torch.set_num_threads(1)
+        torch.set_num_interop_threads(1)
+
         self.instantiate(
             rank, 
             machine_id, 
@@ -209,15 +212,6 @@ class PrimaryCloud(Node):
         self.sent_disconnections = False
 
     def init_comm(self, comm_configs):
-        """
-        Instantiate communication module from config.
-
-        Parameters
-        ----------
-        comm_configs : dict
-            Python dict containing communication config params
-
-        """
         comm_module = importlib.import_module(comm_configs["comm_package"])
         comm_class = getattr(comm_module, comm_configs["comm_class"])
         comm_params = utils.remove_keys(comm_configs, ["comm_package", "comm_class"])

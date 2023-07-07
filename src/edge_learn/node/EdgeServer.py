@@ -4,6 +4,7 @@ import torch
 import os
 import json
 import importlib
+import math
 from matplotlib import pyplot as plt
 
 from decentralizepy.node.Node import Node
@@ -182,20 +183,30 @@ class EdgeServer(Node):
             "r",
         ) as inf:
             results_dict = json.load(inf)
-            self.save_plot(
-                results_dict["train_loss"],
-                "train_loss",
-                "Training Loss",
-                "Communication Rounds",
-                os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
-            )
-            self.save_plot(
-                results_dict["test_acc"],
-                "test_acc",
-                "Test Accuracy",
-                "Communication Rounds",
-                os.path.join(self.log_dir, "{}_test_acc.png".format(self.rank)),
-            )
+            self.save_graphs(results_dict)
+            
+    def save_graphs(self, results_dict):
+        self.save_plot(
+            results_dict["train_loss"],
+            "train_loss",
+            "Training Loss",
+            "Communication Rounds",
+            os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
+        )
+        self.save_plot(
+            results_dict["test_acc"],
+            "test_acc",
+            "Test Accuracy",
+            "Communication Rounds",
+            os.path.join(self.log_dir, "{}_test_acc.png".format(self.rank)),
+        )
+        self.save_plot(
+            results_dict["test_loss"],
+            "test_loss",
+            "Test Loss",
+            "Communication Rounds",
+            os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
+        )
 
     def save_plot(self, l, label, title, xlabel, filename):
         plt.clf()
@@ -218,6 +229,14 @@ class EdgeServer(Node):
         test_after=5,
         *args
     ):
+        total_threads = os.cpu_count()
+        max_threads = max(
+            total_threads - mapping.get_procs_per_machine() - 1, 
+            1
+        )
+        torch.set_num_threads(max_threads)
+        torch.set_num_interop_threads(1)
+
         self.instantiate(
             rank, 
             machine_id, 

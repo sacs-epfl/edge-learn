@@ -7,7 +7,7 @@ cp $config_file $run_path
 
 env_python=/Users/lovelace/anaconda3/bin/python3 # Path to python executable of the environment | conda recommended
 machines=1 # number of machines in the runtime
-iterations=80
+iterations=500
 test_after=20
 eval_file=$decpy_path/executeHierarchical.py
 log_level=DEBUG # DEBUG | INFO | WARN | CRITICAL
@@ -18,7 +18,7 @@ echo M is $m
 
 procs_per_machine=3 
 echo procs per machine is $procs_per_machine
-batch_size=10
+batch_size=15
 echo batch size is $batch_size
 
 log_dir=$run_path/$(date '+%Y-%m-%dT%H:%M')/machine$m # in the eval folder

@@ -69,9 +69,6 @@ class Client(Node):
                 results_dict = json.load(inf)
         else:
             results_dict = {
-                "train_loss": {},
-                "test_loss": {},
-                "test_acc": {},
                 "total_bytes": {},
                 "total_meta": {},
                 "total_data_per_n": {},
@@ -83,11 +80,6 @@ class Client(Node):
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
         results_dict["total_elapsed_time"][self.iteration + 1] = cur_time - self.start_time
         self.start_time = cur_time
-
-        # Removed Evaluation TODO from here, add it to the edge server because all clients have the same model.
-        # Will have to use the timestamp of the client but accuracy of the edge server.
-        # Write model with a unique name using the round number and client uid to NFS
-        # Evaluate on another machine
         
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
@@ -117,40 +109,7 @@ class Client(Node):
         batch_size_to_send: int= 64,
         *args
     ):
-        """
-        Constructor
-
-        Parameters
-        ----------
-        rank : int
-            Rank of process local to the machine
-        machine_id : int
-            Machine ID on which the process in running
-        mapping : decentralizepy.mappings
-            The object containing the mapping rank <--> uid
-        config : dict
-            A dictionary of configurations. Must contain the following:
-            [DATASET]
-                dataset_package
-                dataset_class
-                model_class
-            [OPTIMIZER_PARAMS]
-                optimizer_package
-                optimizer_class
-            [TRAIN_PARAMS]
-                training_package = decentralizepy.training.Training
-                training_class = Training
-                epochs_per_round = 25
-                batch_size = 64
-        log_dir : str
-            Logging directory
-        log_level : logging.Level
-            One of DEBUG, INFO, WARNING, ERROR, CRITICAL
-        args : optional
-            Other arguments
-
-        """
-        torch.set_num_threads(1) # No learning, so 1 thread is enough
+        torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
         
         self.instantiate(
@@ -177,29 +136,6 @@ class Client(Node):
         batch_size_to_send: int,
         *args
     ):
-        """
-        Construct objects.
-
-        Parameters
-        ----------
-        rank : int
-            Rank of process local to the machine
-        machine_id : int
-            Machine ID on which the process in running
-        mapping : decentralizepy.mappings
-            The object containing the mapping rank <--> uid
-        config : dict
-            A dictionary of configurations.
-        iterations : int
-            Number of iterations (communication steps) for which the model should be trained
-        log_dir : str
-            Logging directory
-        log_level : logging.Level
-            One of DEBUG, INFO, WARNING, ERROR, CRITICAL
-        args : optional
-            Other arguments
-
-        """
         logging.info("Started process")
 
         self.init_log(log_dir, rank, log_level)
@@ -245,15 +181,6 @@ class Client(Node):
         self.batch_size_to_send = batch_size_to_send
 
     def init_comm(self, comm_configs):
-        """
-        Instantiate communication module from config.
-
-        Parameters
-        ----------
-        comm_configs : dict
-            Python dict containing communication config params
-
-        """
         comm_module = importlib.import_module(comm_configs["comm_package"])
         comm_class = getattr(comm_module, comm_configs["comm_class"])
         comm_params = utils.remove_keys(comm_configs, ["comm_package", "comm_class"])
