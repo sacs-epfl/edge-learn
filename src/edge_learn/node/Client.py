@@ -9,6 +9,7 @@ from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.node.Node import Node
 from decentralizepy import utils
 
+
 class Client(Node):
     """
     Defines the client node (representing a consumer device)
@@ -29,12 +30,12 @@ class Client(Node):
             pass
         finally:
             self.finalize_run()
-    
+
     def initialize_run(self):
         self.trainset = self.dataset.get_trainset(self.batch_size_to_send, True)
         self.dataiter = iter(self.trainset)
         self.start_time = perf_counter()
-    
+
     def get_model_from_edge_server(self):
         sender, data = self.receive_channel("MODEL")
 
@@ -51,15 +52,20 @@ class Client(Node):
         self.sharing.communication_round += 1
 
         logging.info("Received model from edge")
-    
+
     def send_batch_to_edge_server(self):
         to_send = dict()
         to_send["CHANNEL"] = "DATA"
         to_send["iteration"] = self.iteration
-        to_send["params"] = next(self.dataiter) # TODO ensure this is proper way to get next batch
+        try:
+            to_send["params"] = next(self.dataiter)
+        except StopIteration:
+            # Recreate the iterator
+            self.dataiter = iter(self.trainset)
+            to_send["params"] = next(self.dataiter)
         to_send["STATUS"] = "OK"
         self.communication.send(self.parents[0], to_send)
-    
+
     def collect_stats(self):
         if self.iteration != 0:
             with open(
@@ -75,12 +81,13 @@ class Client(Node):
                 "total_elapsed_time": {},
             }
 
-        
         cur_time = perf_counter()
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
-        results_dict["total_elapsed_time"][self.iteration + 1] = cur_time - self.start_time
+        results_dict["total_elapsed_time"][self.iteration + 1] = (
+            cur_time - self.start_time
+        )
         self.start_time = cur_time
-        
+
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
                 self.iteration + 1
@@ -94,7 +101,7 @@ class Client(Node):
             os.path.join(self.log_dir, "{}_results.json".format(self.rank)), "w"
         ) as of:
             json.dump(results_dict, of)
-    
+
     def finalize_run(self):
         logging.info("Server disconnected. Process complete!")
 
@@ -104,14 +111,14 @@ class Client(Node):
         machine_id: int,
         mapping: EdgeMapping,
         config: dict,
-        log_dir: str=".",
-        log_level: logging=logging.INFO,
-        batch_size_to_send: int= 64,
+        log_dir: str = ".",
+        log_level: logging = logging.INFO,
+        batch_size_to_send: int = 64,
         *args
     ):
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
-        
+
         self.instantiate(
             rank,
             machine_id,
