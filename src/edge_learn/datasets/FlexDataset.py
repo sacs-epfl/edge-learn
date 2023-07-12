@@ -1,7 +1,10 @@
+import logging
+
 from decentralizepy.datasets.Dataset import Dataset
 
 from torch.utils.data import DataLoader, Dataset as TorchDataset
 import torch
+
 
 class InnerDataset(TorchDataset):
     def __init__(self):
@@ -15,8 +18,9 @@ class InnerDataset(TorchDataset):
         return self.data[idx], self.target[idx]
 
     def append(self, batch):
-        self.data.append(batch['data'])
-        self.target.append(batch['target'])
+        self.data.extend(batch["data"])
+        self.target.extend(batch["target"])
+
 
 class FlexDataset(Dataset):
     def __init__(self):
@@ -25,5 +29,7 @@ class FlexDataset(Dataset):
     def add_batch(self, batch):
         self.inner_dataset.append(batch)
 
-    def get_trainset(self):
-        return DataLoader(self.inner_dataset, batch_size=1)
+    def get_trainset(self, batch_size):
+        if len(self.inner_dataset) == 0:
+            return None
+        return DataLoader(self.inner_dataset, batch_size=batch_size, shuffle=True)

@@ -60,9 +60,8 @@ class Client(Node):
         try:
             to_send["params"] = next(self.dataiter)
         except StopIteration:
-            # Recreate the iterator
-            self.dataiter = iter(self.trainset)
-            to_send["params"] = next(self.dataiter)
+            logging.debug("Ran out of data")
+            to_send["params"] = (torch.tensor([]), torch.tensor([]))
         to_send["STATUS"] = "OK"
         self.communication.send(self.parents[0], to_send)
 

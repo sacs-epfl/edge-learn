@@ -49,6 +49,7 @@ def create_node(node_type, rank, config_dir):
             "/results",
             cur_log_level,
             params["test_frequency"],
+            params["train_batch_size"],
         )
     elif node_type == "client":
         Client(
@@ -58,7 +59,7 @@ def create_node(node_type, rank, config_dir):
             config,
             "/results",
             cur_log_level,
-            params["batch_size"],
+            params["batch_size_to_send_to_edge"],
         )
     else:
         print(f"Invalid node type: {node_type}")

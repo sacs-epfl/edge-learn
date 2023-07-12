@@ -3,8 +3,9 @@
   "cloud_machine_id": 0,
   "number_of_machines": 1,
   "clients_per_machine": 3,
-  "number_of_iterations": 100,
+  "number_of_iterations": 500,
   "log_level": "DEBUG",
-  "test_frequency": 20,
-  "batch_size": 15
+  "test_frequency": 1000,
+  "batch_size_to_send_to_edge": 15,
+  "train_batch_size": 60
 }

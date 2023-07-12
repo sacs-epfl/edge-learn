@@ -99,11 +99,31 @@ class EdgeServer(Node):
             batch_data.append(data)
             batch_target.append(target)
 
-        self.batch = dict()
-        self.batch["data"] = torch.cat(batch_data)
-        self.batch["target"] = torch.cat(batch_target)
+        self.received_batch = dict()
+        self.received_batch["data"] = torch.cat(batch_data)
+        self.received_batch["target"] = torch.cat(batch_target)
 
         logging.info("Created batch from data received from clients")
+
+        amountRecordsNeeded = (
+            self.train_batch_size - self.received_batch["data"].shape[0]
+        )
+        data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
+        if data_loader is not None:
+            iter_data_loader = iter(data_loader)
+            relooked_batch = next(iter_data_loader)
+            logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
+            self.batch["data"] = torch.cat(
+                (self.received_batch["data"], relooked_batch[0])
+            )
+            self.batch["target"] = torch.cat(
+                (self.received_batch["target"], relooked_batch[1])
+            )
+        else:
+            self.batch = self.received_batch
+
+        if len(batch_data) != 0:
+            self.collected_dataset.add_batch(self.received_batch)
 
     def train(self):
         self.loss_amt = self.trainer.trainstep(self.batch["data"], self.batch["target"])
@@ -230,6 +250,7 @@ class EdgeServer(Node):
         weights_store_dir=".",
         log_level=logging.INFO,
         test_after=5,
+        train_batch_size=32,
         *args
     ):
         total_threads = os.cpu_count()
@@ -246,6 +267,7 @@ class EdgeServer(Node):
             weights_store_dir,
             log_level,
             test_after,
+            train_batch_size,
             *args
         )
 
@@ -262,6 +284,7 @@ class EdgeServer(Node):
         weights_store_dir: str,
         log_level: int,
         test_after: int,
+        train_batch_size: int,
         *args
     ):
         logging.info("Started process")
@@ -274,11 +297,13 @@ class EdgeServer(Node):
             log_dir,
             weights_store_dir,
             test_after,
+            train_batch_size,
         )
 
         self.batches_received = dict()
         self.peer_deques = dict()
 
+        self.collected_dataset = FlexDataset()
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
@@ -304,6 +329,7 @@ class EdgeServer(Node):
         log_dir: str,
         weights_store_dir: str,
         test_after: int,
+        train_batch_size: int,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -316,6 +342,7 @@ class EdgeServer(Node):
         self.weights_store_dir = weights_store_dir
         self.test_after = test_after
         self.sent_disconnections = False
+        self.train_batch_size = train_batch_size
 
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])
