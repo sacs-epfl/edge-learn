@@ -13,12 +13,14 @@ from decentralizepy import utils
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from edge_learn.datasets.FlexDataset import FlexDataset
 
+
 class EdgeServer(Node):
     """
     Defines the edge server node
-    Responsible for training model based on data from clients and sending the model to the 
+    Responsible for training model based on data from clients and sending the model to the
         primary cloud and returning the model to the clients
     """
+
     class DisconnectedException(Exception):
         pass
 
@@ -37,10 +39,10 @@ class EdgeServer(Node):
             pass
         finally:
             self.finalize_run()
-    
+
     def initialize_run(self):
         self.rounds_to_test = self.test_after
-    
+
     def get_model_from_primary_cloud(self):
         sender, data = self.receive_channel("MODEL")
 
@@ -53,7 +55,7 @@ class EdgeServer(Node):
         self.model.load_state_dict(data["params"])
         self.sharing.communication_round += 1
         logging.debug("Received model")
-    
+
     def send_model_to_clients(self):
         to_send = dict()
         to_send["params"] = self.model.state_dict()
@@ -63,7 +65,7 @@ class EdgeServer(Node):
 
         for client in self.children:
             self.communication.send(client, to_send)
-    
+
     def get_data_from_clients(self):
         self.batches_received = dict()
         while not self.receive_from_all_clients():
@@ -71,13 +73,13 @@ class EdgeServer(Node):
 
             if sender not in self.batches_received:
                 self.batches_received[sender] = deque()
-            
+
             if data["iteration"] == self.iteration:
                 self.batches_received[sender].appendleft(data)
             else:
                 self.batches_received[sender].append(data)
         logging.info("Received data from all clients")
-    
+
     def receive_from_all_clients(self):
         for k in self.children:
             if (
@@ -87,7 +89,6 @@ class EdgeServer(Node):
             ):
                 return False
         return True
-
 
     def create_batch(self):
         batch_data = []
@@ -106,8 +107,10 @@ class EdgeServer(Node):
 
     def train(self):
         self.loss_amt = self.trainer.trainstep(self.batch["data"], self.batch["target"])
-        
-        logging.info("Trained model for one step with a loss of {}".format(self.loss_amt))
+
+        logging.info(
+            "Trained model for one step with a loss of {}".format(self.loss_amt)
+        )
 
     def send_model_to_primary_cloud(self):
         to_send = self.sharing.serialized_model()
@@ -117,7 +120,7 @@ class EdgeServer(Node):
         to_send["STATUS"] = "OK"
 
         self.communication.send(self.parents[0], to_send)
-            
+
     def collect_stats(self):
         if self.iteration != 0:
             with open(
@@ -133,8 +136,8 @@ class EdgeServer(Node):
                 "total_bytes": {},
                 "total_meta": {},
                 "total_data_per_n": {},
-            }  
-        
+            }
+
         results_dict["train_loss"][self.iteration + 1] = self.loss_amt
 
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
@@ -156,7 +159,7 @@ class EdgeServer(Node):
             ta, tl = self.dataset.test(self.model, self.loss)
             results_dict["test_acc"][self.iteration + 1] = ta
             results_dict["test_loss"][self.iteration + 1] = tl
-        
+
         with open(
             os.path.join(self.log_dir, "{}_results.json".format(self.rank)), "w"
         ) as of:
@@ -165,10 +168,10 @@ class EdgeServer(Node):
     def finalize_run(self):
         self.disconnect_children()
         self.save_data()
-        
+
     def disconnect_children(self):
         if not self.sent_disconnections:
-            logging.info('Sending disconnection messages to all clients')
+            logging.info("Sending disconnection messages to all clients")
             for client in self.children:
                 logging.info("Disconnecting from {}".format(client))
                 self.communication.send(client, {"STATUS": "BYE", "CHANNEL": "MODEL"})
@@ -184,7 +187,7 @@ class EdgeServer(Node):
         ) as inf:
             results_dict = json.load(inf)
             self.save_graphs(results_dict)
-            
+
     def save_graphs(self, results_dict):
         self.save_plot(
             results_dict["train_loss"],
@@ -218,11 +221,11 @@ class EdgeServer(Node):
         plt.savefig(filename)
 
     def __init__(
-        self, 
+        self,
         rank: int,
         machine_id: int,
-        mapping: EdgeMapping,  
-        config: dict, 
+        mapping: EdgeMapping,
+        config: dict,
         log_dir=".",
         weights_store_dir=".",
         log_level=logging.INFO,
@@ -230,37 +233,34 @@ class EdgeServer(Node):
         *args
     ):
         total_threads = os.cpu_count()
-        max_threads = max(
-            total_threads - mapping.get_procs_per_machine() - 1, 
-            1
-        )
+        max_threads = max(total_threads - mapping.get_procs_per_machine() - 1, 1)
         torch.set_num_threads(max_threads)
         torch.set_num_interop_threads(1)
 
         self.instantiate(
-            rank, 
-            machine_id, 
-            mapping, 
-            config, 
-            log_dir, 
-            weights_store_dir, 
-            log_level, 
+            rank,
+            machine_id,
+            mapping,
+            config,
+            log_dir,
+            weights_store_dir,
+            log_level,
             test_after,
             *args
         )
 
         self.run()
         logging.info("Edge Server finished running")
-    
+
     def instantiate(
         self,
-        rank: int, 
-        machine_id: int, 
-        mapping: EdgeMapping, 
-        config: dict, 
-        log_dir: str, 
-        weights_store_dir: str, 
-        log_level: int, 
+        rank: int,
+        machine_id: int,
+        mapping: EdgeMapping,
+        config: dict,
+        log_dir: str,
+        weights_store_dir: str,
+        log_level: int,
         test_after: int,
         *args
     ):
@@ -278,11 +278,28 @@ class EdgeServer(Node):
 
         self.batches_received = dict()
         self.peer_deques = dict()
-        
+
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_trainer(config["TRAIN_PARAMS"])
+
+        # TODO DELETE
+        logging.debug(
+            "My addr is {}".format(self.communication.addr(self.rank, self.machine_id))
+        )
+        logging.debug(
+            "Cloud server addr is {}".format(
+                self.communication.addr(-1, self.machine_id)
+            )
+        )
+        for i in range(1, self.children.__len__() + 1):
+            logging.debug(
+                "Child {} addr is {}".format(
+                    i, self.communication.addr(i, self.machine_id)
+                )
+            )
+        ####################
 
         self.message_queue = dict()
         self.barrier = set()
@@ -295,7 +312,7 @@ class EdgeServer(Node):
         self.init_sharing(config["SHARING"])
 
         print("Initialized Edge Server")
-    
+
     def cache_fields(
         self,
         rank: int,
@@ -313,7 +330,7 @@ class EdgeServer(Node):
         self.parents = self.mapping.get_parents(self.uid)
         self.children = self.mapping.get_children(self.uid)
         self.log_dir = log_dir
-        self.weights_store_dir = weights_store_dir     
+        self.weights_store_dir = weights_store_dir
         self.test_after = test_after
         self.sent_disconnections = False
 
@@ -324,4 +341,4 @@ class EdgeServer(Node):
         self.addresses_filepath = comm_params.get("addresses_filepath", None)
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, 1, **comm_params
-        ) 
+        )

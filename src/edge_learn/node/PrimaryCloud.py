@@ -10,6 +10,7 @@ from decentralizepy import utils
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 
+
 class PrimaryCloud(Node):
     """
     Defines the primary cloud node
@@ -25,12 +26,11 @@ class PrimaryCloud(Node):
             self.average_model_from_peer_deques()
             self.collect_stats()
         self.finalize_run()
-                    
-    
+
     def initialize_iteration(self, iteration: int):
         self.iteration = iteration
         self.peer_deques = dict()
-    
+
     def send_model_to_edge_servers(self):
         to_send = dict()
         to_send["params"] = self.model.state_dict()
@@ -40,7 +40,7 @@ class PrimaryCloud(Node):
 
         for edge in self.children:
             self.communication.send(edge, to_send)
-    
+
     def get_model_from_edge_servers_and_store_in_peer_deque(self):
         while not self.receive_from_all():
             sender, data = self.receive_channel("MODEL")
@@ -53,7 +53,7 @@ class PrimaryCloud(Node):
             else:
                 self.peer_deques[sender].append(data)
         logging.debug("Received model from each edge server")
-    
+
     def receive_from_all(self):
         for k in self.children:
             if (
@@ -63,7 +63,7 @@ class PrimaryCloud(Node):
             ):
                 return False
         return True
-    
+
     def average_model_from_peer_deques(self):
         averaging_deque = dict()
         for edge in self.children:
@@ -71,7 +71,7 @@ class PrimaryCloud(Node):
         self.sharing._pre_step()
         self.sharing._averaging_server(averaging_deque)
         logging.info("Averaged model from each edge server")
-     
+
     def collect_stats(self):
         if self.iteration != 0:
             with open(
@@ -96,34 +96,32 @@ class PrimaryCloud(Node):
             results_dict["total_data_per_n"][
                 self.iteration + 1
             ] = self.communication.total_data
-        
+
         with open(
             os.path.join(self.log_dir, "{}_results.json".format(self.rank)), "w"
         ) as of:
             json.dump(results_dict, of)
-    
+
     def finalize_run(self):
         self.disconnect_neighbors()
         logging.info("Storing final weight")
         self.model.dump_weights(self.weights_store_dir, self.uid, self.iteration)
         logging.info("All neighbors disconnected. Process complete!")
-    
+
     def disconnect_neighbors(self):
         if not self.sent_disconnections:
             logging.info("Disconnecting neighbors")
 
             for edge in self.children:
-                self.communication.send(
-                    edge, {"STATUS": "BYE", "CHANNEL": "MODEL"}
-                )
+                self.communication.send(edge, {"STATUS": "BYE", "CHANNEL": "MODEL"})
             self.sent_disconnections = True
 
     def __init__(
-        self, 
+        self,
         rank: int,
         machine_id: int,
-        mapping: EdgeMapping, 
-        config, 
+        mapping: EdgeMapping,
+        config,
         iterations=1,
         log_dir=".",
         weights_store_dir=".",
@@ -134,20 +132,20 @@ class PrimaryCloud(Node):
         torch.set_num_interop_threads(1)
 
         self.instantiate(
-            rank, 
-            machine_id, 
-            mapping, 
-            config, 
-            iterations, 
-            log_dir, 
-            weights_store_dir, 
-            log_level, 
+            rank,
+            machine_id,
+            mapping,
+            config,
+            iterations,
+            log_dir,
+            weights_store_dir,
+            log_level,
             *args
         )
 
         self.run()
         logging.info("Primary cloud finished running")
-    
+
     def instantiate(
         self,
         rank: int,
@@ -155,7 +153,7 @@ class PrimaryCloud(Node):
         mapping: EdgeMapping,
         config: dict,
         iterations: int,
-        log_dir:str,
+        log_dir: str,
         weights_store_dir: str,
         log_level: int,
         *args
@@ -189,7 +187,7 @@ class PrimaryCloud(Node):
         self.init_sharing(config["SHARING"])
 
         print("Initialized primary cloud")
-    
+
     def cache_fields(
         self,
         rank: int,

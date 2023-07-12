@@ -1,0 +1,10 @@
+{
+  "machine_id": 0,
+  "cloud_machine_id": 0,
+  "number_of_machines": 1,
+  "clients_per_machine": 3,
+  "number_of_iterations": 100,
+  "log_level": "DEBUG",
+  "test_frequency": 20,
+  "batch_size": 15
+}
