@@ -284,23 +284,6 @@ class EdgeServer(Node):
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_trainer(config["TRAIN_PARAMS"])
 
-        # TODO DELETE
-        logging.debug(
-            "My addr is {}".format(self.communication.addr(self.rank, self.machine_id))
-        )
-        logging.debug(
-            "Cloud server addr is {}".format(
-                self.communication.addr(-1, self.machine_id)
-            )
-        )
-        for i in range(1, self.children.__len__() + 1):
-            logging.debug(
-                "Child {} addr is {}".format(
-                    i, self.communication.addr(i, self.machine_id)
-                )
-            )
-        ####################
-
         self.message_queue = dict()
         self.barrier = set()
         self.my_neighbors = set()
