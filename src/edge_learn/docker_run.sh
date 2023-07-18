@@ -15,10 +15,18 @@ create_primary_cloud() {
     docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
 }
 
-create_primary_cloud_if_needed() {
+is_primary_cloud() {
     local machine_id=$(jq -r '.machine_id' config/params.json)
     local cloud_machine_id=$(jq -r '.cloud_machine_id' config/params.json)
     if [ $machine_id -eq $cloud_machine_id ]; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+create_primary_cloud_if_needed() {
+    if [ $(is_primary_cloud) -eq 0 ]; then
         create_primary_cloud $base_result_dir
     fi 
 }
@@ -55,9 +63,31 @@ launch_nodes() {
     create_clients $base_result_dir
 }
 
+wait_for_exit() {
+    local container_name=$1
+    echo "Waiting for container $container_name to exit..."
+    docker wait $container_name
+    echo "Container $container_name exited"
+    docker remove $container_name
+}
+
+cleanup() {
+    if [ $(is_primary_cloud) -eq 0 ]; then
+        wait_for_exit primary_cloud
+    fi
+    wait_for_exit edge_server
+    local clients_per_machine=$(jq -r '.clients_per_machine' config/params.json)
+    for i in $(seq 0 $(($clients_per_machine - 1))); do
+        wait_for_exit client_$i
+    done
+
+    echo "All containers exited"
+}
+
 main() {
     build_docker_image
     launch_nodes
+    cleanup
 }
 
 main

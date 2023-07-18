@@ -126,7 +126,9 @@ class EdgeServer(Node):
             self.collected_dataset.add_batch(self.received_batch)
 
     def train(self):
-        self.loss_amt = self.trainer.trainstep(self.batch["data"], self.batch["target"])
+        self.loss_amt = self.trainer.trainstep(
+            self.batch["data"], self.batch["target"].long()
+        )
 
         logging.info(
             "Trained model for one step with a loss of {}".format(self.loss_amt)
