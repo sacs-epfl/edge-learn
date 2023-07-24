@@ -4,10 +4,6 @@ calculate_port() {
     echo $((2 * rank + offset))
 }
 
-build_docker_image() {
-    docker build -t edge_learn:latest ../..
-}
-
 create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
@@ -85,7 +81,6 @@ cleanup() {
 }
 
 main() {
-    build_docker_image
     launch_nodes
     cleanup
 }
