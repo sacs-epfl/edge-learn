@@ -1,3 +1,5 @@
+#!/bin/bash
+
 calculate_port() {
     local rank=$1
     local offset=9001
