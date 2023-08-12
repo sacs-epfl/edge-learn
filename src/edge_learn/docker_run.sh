@@ -1,5 +1,13 @@
 #!/bin/bash
 
+TRAIN_DIR=$1
+TEST_DIR=$2
+
+if [ -z "$TRAIN_DIR" ] || [ -z "$TEST_DIR" ]; then
+    echo "Usage: $0 <TRAIN_DIRectory> <TEST_DIRectory>"
+    exit 1
+fi
+
 calculate_port() {
     local rank=$1
     local offset=9001
@@ -10,7 +18,7 @@ create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
     echo "Running primary cloud"
-    docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
+    docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
 }
 
 is_primary_cloud() {
@@ -33,7 +41,7 @@ create_edge_server() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/edge_server
     echo "Running edge server"
-    docker run -d -p $(calculate_port 0):1000 -v $base_result_dir/edge_server:/results --name edge_server edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
+    docker run -d -p $(calculate_port 0):1000 -v $base_result_dir/edge_server:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name edge_server edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
 }
 
 create_client() {
@@ -41,7 +49,7 @@ create_client() {
     local base_result_dir=$2
     mkdir -p $base_result_dir/client_$i
     echo "Running client $i"
-    docker run -d -p $(calculate_port $((i + 1))):1000 -v $base_result_dir/client_$i:/results --name client_$i edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
+    docker run -d -p $(calculate_port $((i + 1))):1000 -v $base_result_dir/client_$i:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name client_$i edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
 }
 
 create_clients() {
