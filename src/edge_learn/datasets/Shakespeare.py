@@ -89,25 +89,31 @@ class Shakespeare(Dataset):
             num_samples.extend(n)
             data.update(d)
         return users, num_samples, data
-    
+
     def load_trainset(self):
         """
         Loads the training set. Partitions it if needed.
 
         """
         logging.info("Loading training set.")
-        if not self.mapping.does_uid_generate_data(self.mapping.get_uid(self.rank, self.machine_id)):
+        if not self.mapping.does_uid_generate_data(
+            self.mapping.get_uid(self.rank, self.machine_id)
+        ):
             self.train_x = []
             self.train_y = []
             return
 
         clients, num_samples, train_data = self.__read_dir__(self.train_dir)
-        duid = self.mapping.get_duid_from_uid(self.mapping.get_uid(self.rank, self.machine_id))
+        duid = self.mapping.get_duid_from_uid(
+            self.mapping.get_uid(self.rank, self.machine_id)
+        )
         assert clients.__len__() > duid
         print("duid: ", duid)
         print("tostring: ", str(duid))
         print("data_y: ", train_data[str(duid)]["y"])
-        self.train_y = np.array(self.process(train_data[str(duid)]["y"]), dtype=np.dtype("int64")).reshape(-1)
+        self.train_y = np.array(
+            self.process(train_data[str(duid)]["y"]), dtype=np.dtype("int64")
+        ).reshape(-1)
         self.train_x = np.array(
             self.process(train_data[str(duid)]["x"]), dtype=np.dtype("int64")
         )
@@ -122,7 +128,9 @@ class Shakespeare(Dataset):
 
         """
         logging.info("Loading testing set.")
-        if not self.mapping.does_uid_test_data(self.mapping.get_uid(self.rank, self.machine_id)):
+        if not self.mapping.does_uid_test_data(
+            self.mapping.get_uid(self.rank, self.machine_id)
+        ):
             self.test_x = []
             self.test_y = []
             return

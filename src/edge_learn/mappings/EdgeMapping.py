@@ -28,7 +28,9 @@ class EdgeMapping(Mapping):
 
         """
 
-        self.n_procs = n_machines * procs_per_machine + n_machines + 1 # primary cloud + edge servers + clients
+        self.n_procs = (
+            n_machines * procs_per_machine + n_machines + 1
+        )  # primary cloud + edge servers + clients
         super().__init__(self.n_procs)
         self.n_machines = n_machines
         self.edge_servers = n_machines
@@ -36,7 +38,7 @@ class EdgeMapping(Mapping):
         self.local_clients = procs_per_machine
         self.global_service_machine = global_service_machine
         self.current_machine = current_machine
-    
+
     def get_procs_per_machine(self):
         """
         Gives the number of processes per machine
@@ -70,7 +72,9 @@ class EdgeMapping(Mapping):
             return rank
         elif rank == 0:
             return machine_id
-        return self.edge_servers + machine_id * self.local_clients + rank - 1 # -1 to account for rank 0 
+        return (
+            self.edge_servers + machine_id * self.local_clients + rank - 1
+        )  # -1 to account for rank 0
 
     def get_parents(self, uid: int) -> list:
         if uid < 0:
@@ -80,13 +84,19 @@ class EdgeMapping(Mapping):
         else:
             _, machine_id = self.get_machine_and_rank(uid)
             return [machine_id]
-        
+
     def get_children(self, uid: int) -> list:
         if uid < 0:
             return list(range(self.edge_servers))
         elif uid < self.edge_servers:
-            return list(range(self.edge_servers + uid * self.local_clients, 
-                              self.edge_servers + uid * self.local_clients + self.procs_per_machine))
+            return list(
+                range(
+                    self.edge_servers + uid * self.local_clients,
+                    self.edge_servers
+                    + uid * self.local_clients
+                    + self.procs_per_machine,
+                )
+            )
         else:
             return []
 
@@ -94,18 +104,18 @@ class EdgeMapping(Mapping):
         if uid < self.n_machines:
             return False
         return True
-    
+
     def does_uid_test_data(self, uid: int) -> bool:
         if uid >= self.n_machines:
             return False
         return True
-    
+
     def get_duid_from_uid(self, uid: int) -> int:
         """
         Returns the data unique identifier, useful for the dataset
         """
         return uid - self.n_machines
-        
+
     def get_machine_and_rank(self, uid: int):
         """
         Gives the rank and machine_id of the node
