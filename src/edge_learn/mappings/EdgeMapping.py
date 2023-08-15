@@ -89,6 +89,22 @@ class EdgeMapping(Mapping):
                               self.edge_servers + uid * self.local_clients + self.procs_per_machine))
         else:
             return []
+
+    def does_uid_generate_data(self, uid: int) -> bool:
+        if uid < self.n_machines:
+            return False
+        return True
+    
+    def does_uid_test_data(self, uid: int) -> bool:
+        if uid >= self.n_machines:
+            return False
+        return True
+    
+    def get_duid_from_uid(self, uid: int) -> int:
+        """
+        Returns the data unique identifier, useful for the dataset
+        """
+        return uid - self.n_machines
         
     def get_machine_and_rank(self, uid: int):
         """
