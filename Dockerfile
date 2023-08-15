@@ -1,8 +1,7 @@
 FROM python:3
 
 # Move files to container
-COPY src/edge_learn /edge_learn
-COPY decentralizepy/src/decentralizepy /decentralizepy
+COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
 
 # Install dependencies
 RUN pip install -r /edge_learn/requirements.txt

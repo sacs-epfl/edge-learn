@@ -1,13 +1,5 @@
 #!/bin/bash
 
-TRAIN_DIR=$1
-TEST_DIR=$2
-
-if [ -z "$TRAIN_DIR" ] || [ -z "$TEST_DIR" ]; then
-    echo "Usage: $0 <TRAIN_DIRectory> <TEST_DIRectory>"
-    exit 1
-fi
-
 calculate_port() {
     local rank=$1
     local offset=9001
@@ -18,7 +10,7 @@ create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
     echo "Running primary cloud"
-    docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
+    docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4/train:/train -v $4/test:/test --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
 }
 
 is_primary_cloud() {
@@ -33,7 +25,7 @@ is_primary_cloud() {
 
 create_primary_cloud_if_needed() {
     if [ $(is_primary_cloud) -eq 0 ]; then
-        create_primary_cloud $base_result_dir
+        create_primary_cloud $1 $2 $3 $4
     fi 
 }
 
@@ -41,7 +33,7 @@ create_edge_server() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/edge_server
     echo "Running edge server"
-    docker run -d -p $(calculate_port 0):1000 -v $base_result_dir/edge_server:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name edge_server edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
+    docker run -d -p $(calculate_port 0):1000 -v $base_result_dir/edge_server:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4/train:/train -v $4/test:/test --name edge_server edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
 }
 
 create_client() {
@@ -49,24 +41,26 @@ create_client() {
     local base_result_dir=$2
     mkdir -p $base_result_dir/client_$i
     echo "Running client $i"
-    docker run -d -p $(calculate_port $((i + 1))):1000 -v $base_result_dir/client_$i:/results -v $TRAIN_DIR:/train -v $TEST_DIR:/test --name client_$i edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
+    docker run -d -p $(calculate_port $((i + 1))):1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5/train:/train -v $5/test:/test --name client_$i edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
 }
 
 create_clients() {
     local base_result_dir=$1
     local clients_per_machine=$(jq -r '.clients_per_machine' config/params.json)
     for i in $(seq 0 $(($clients_per_machine - 1))); do
-        create_client $i $base_result_dir
+        create_client $i $base_result_dir $2 $3 $4
     done
 }
 
 launch_nodes() {
     base_result_dir=$(pwd)/results/$(date +%Y-%m-%d_%H-%M)
+    edge_learn_dir=$(pwd)
+    decentralizepy_dir=$(pwd)/../../decentralizepy/src/decentralizepy
     mkdir -p $base_result_dir
 
-    create_primary_cloud_if_needed $base_result_dir
-    create_edge_server $base_result_dir
-    create_clients $base_result_dir
+    create_primary_cloud_if_needed $base_result_dir $edge_learn_dir $decentralizepy_dir $1
+    create_edge_server $base_result_dir $edge_learn_dir $decentralizepy_dir $1
+    create_clients $base_result_dir $edge_learn_dir $decentralizepy_dir $1
 }
 
 wait_for_exit() {
@@ -91,11 +85,12 @@ cleanup() {
 }
 
 main() {
-    launch_nodes
+    launch_nodes $1
     cleanup
 }
 
-main
+main $1
+# First and only argument is pointing to where dataset exists
 
 
 
