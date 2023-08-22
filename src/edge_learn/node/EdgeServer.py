@@ -104,6 +104,7 @@ class EdgeServer(Node):
         self.received_batch["target"] = torch.cat(batch_target)
 
         logging.info("Created batch from data received from clients")
+        logging.info("Type of data received: ", self.received_batch["data"].dtype)
 
         amountRecordsNeeded = (
             self.train_batch_size - self.received_batch["data"].shape[0]
@@ -112,6 +113,7 @@ class EdgeServer(Node):
         if data_loader is not None:
             iter_data_loader = iter(data_loader)
             relooked_batch = next(iter_data_loader)
+            logging.info("Type of data relooked: ", relooked_batch[0].dtype)
             logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
             self.batch["data"] = torch.cat(
                 (self.received_batch["data"], relooked_batch[0])
