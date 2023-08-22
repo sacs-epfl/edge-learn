@@ -58,10 +58,20 @@ class Client(Node):
         to_send["CHANNEL"] = "DATA"
         to_send["iteration"] = self.iteration
         try:
-            to_send["params"] = next(self.dataiter)
+            data, target = next(self.dataiter)
+            if data.nelement() != 0:
+                self.last_dtype_data = data.dtype
+                logging.info("Last dtype data: %s", self.last_dtype_data)
+            if target.nelement() != 0:
+                self.last_dtype_target = target.dtype
+                logging.info("Last dtype target: %s", self.last_dtype_target)
+            to_send["params"] = (data, target)
         except StopIteration:
             logging.debug("Ran out of data")
-            to_send["params"] = (torch.tensor([]), torch.tensor([]))
+            to_send["params"] = (
+                torch.tensor([], dtype=self.last_dtype_data),
+                torch.tensor([], dtype=self.last_dtype_target),
+            )
         to_send["STATUS"] = "OK"
         self.communication.send(self.parents[0], to_send)
 
@@ -153,6 +163,8 @@ class Client(Node):
             log_dir,
             batch_size_to_send,
         )
+        self.last_dtype_data = torch.int64
+        self.last_dtype_target = torch.int64
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
 
