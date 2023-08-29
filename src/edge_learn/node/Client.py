@@ -19,7 +19,7 @@ class Client(Node):
     class DisconnectedException(Exception):
         pass
 
-    def run(self):
+    def runHybrid(self):
         try:
             self.initialize_run()
             while self.connected_to_edge_server:
@@ -30,6 +30,22 @@ class Client(Node):
             pass
         finally:
             self.finalize_run()
+
+    def runOnlyWeights(self):
+        try:
+            self.initialize_run()
+            while self.connected_to_edge_server:
+                self.get_model_from_edge_server()
+                self.train()
+                self.send_model_to_edge_server()
+                self.collect_stats()
+        except self.DisconnectedException:
+            pass
+        finally:
+            self.finalize_run()
+
+    def runOnlyData(self):
+        self.runHybrid()
 
     def initialize_run(self):
         self.trainset = self.dataset.get_trainset(self.batch_size_to_send, True)
@@ -74,6 +90,27 @@ class Client(Node):
             )
         to_send["STATUS"] = "OK"
         self.communication.send(self.parents[0], to_send)
+
+    def send_model_to_edge_server(self):
+        to_send = dict()
+        to_send["CHANNEL"] = "MODEL"
+        to_send["iteration"] = self.iteration
+        to_send["STATUS"] = "OK"
+        to_send["params"] = self.model.state_dict()
+        self.communication.send(self.parents[0], to_send)
+
+    def train(self):
+        data, target
+        try:
+            data, target = next(self.dataiter)
+        except StopIteration:
+            self.dataiter = iter(self.trainset)
+            data, target = next(self.dataiter)
+        self.loss_amt = self.trainer.trainstep(data, target.long())
+
+        logging.info(
+            "Trained model for one step with a loss of {}".format(self.loss_amt)
+        )
 
     def collect_stats(self):
         if self.iteration != 0:
@@ -123,6 +160,7 @@ class Client(Node):
         log_dir: str = ".",
         log_level: logging = logging.INFO,
         batch_size_to_send: int = 64,
+        learning_mode: str = "H",
         *args
     ):
         torch.set_num_threads(1)
@@ -136,10 +174,18 @@ class Client(Node):
             log_dir,
             log_level,
             batch_size_to_send,
+            learning_mode,
             *args
         )
 
-        self.run()
+        if self.learning_mode == "H":
+            self.runHybrid()
+        elif self.learning_mode == "OD":
+            self.runOnlyData()
+        elif self.learning_mode == "OW":
+            self.runOnlyWeights()
+        else:
+            raise ValueError("Learning mode must be one of: H, OD, OW")
 
     def instantiate(
         self,
@@ -150,6 +196,7 @@ class Client(Node):
         log_dir: str,
         log_level: logging,
         batch_size_to_send: int,
+        learning_mode: str,
         *args
     ):
         logging.info("Started process")
@@ -162,6 +209,7 @@ class Client(Node):
             mapping,
             log_dir,
             batch_size_to_send,
+            learning_mode,
         )
         self.last_dtype_data = torch.int64
         self.last_dtype_target = torch.int64
@@ -187,6 +235,7 @@ class Client(Node):
         mapping: EdgeMapping,
         log_dir: str,
         batch_size_to_send: int,
+        learning_mode: str,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -197,6 +246,7 @@ class Client(Node):
         self.children = self.mapping.get_children(self.uid)
         self.log_dir = log_dir
         self.batch_size_to_send = batch_size_to_send
+        self.learning_mode = learning_mode
 
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])

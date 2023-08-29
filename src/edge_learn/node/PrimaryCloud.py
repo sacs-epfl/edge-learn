@@ -9,6 +9,7 @@ from decentralizepy.node.Node import Node
 from decentralizepy import utils
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
+from edge_learn.datasets.FlexDataset import FlexDataset
 
 
 class PrimaryCloud(Node):
@@ -18,7 +19,7 @@ class PrimaryCloud(Node):
     Defaulted to have a UID = -1
     """
 
-    def run(self):
+    def runHybrid(self):
         for iteration in range(self.iterations):
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
@@ -26,6 +27,20 @@ class PrimaryCloud(Node):
             self.average_model_from_peer_deques()
             self.collect_stats()
         self.finalize_run()
+
+    def runOnlyData(self):
+        for iteration in range(self.iterations):
+            self.initialize_iteration(iteration)
+            self.send_model_to_edge_servers()
+            self.get_data_from_edge_servers()
+            self.create_batch_and_cache()
+            self.fill_batch_till_target()
+            self.train()
+            self.collect_stats()
+        self.finalize_run()
+
+    def runOnlyWeights(self):
+        self.runHybrid()
 
     def initialize_iteration(self, iteration: int):
         self.iteration = iteration
@@ -42,7 +57,7 @@ class PrimaryCloud(Node):
             self.communication.send(edge, to_send)
 
     def get_model_from_edge_servers_and_store_in_peer_deque(self):
-        while not self.receive_from_all():
+        while not self.receive_from_all(self.peer_deques):
             sender, data = self.receive_channel("MODEL")
 
             if sender not in self.peer_deques:
@@ -54,12 +69,26 @@ class PrimaryCloud(Node):
                 self.peer_deques[sender].append(data)
         logging.debug("Received model from each edge server")
 
-    def receive_from_all(self):
+    def get_data_from_edge_servers(self):
+        self.batches_received = dict()
+        while not self.receive_from_all():
+            sender, data = self.receive_channel("DATA")
+
+            if sender not in self.batches_received:
+                self.batches_received[sender] = deque()
+
+            if data["iteration"] == self.iteration:
+                self.batches_received[sender].appendleft(data)
+            else:
+                self.batches_received[sender].append(data)
+        logging.info("Received data from all clients")
+
+    def receive_from_all(self, dict):
         for k in self.children:
             if (
-                (k not in self.peer_deques)
-                or len(self.peer_deques[k]) == 0
-                or self.peer_deques[k][0]["iteration"] != self.iteration
+                (k not in dict)
+                or len(dict[k]) == 0
+                or dict[k][0]["iteration"] != self.iteration
             ):
                 return False
         return True
@@ -71,6 +100,55 @@ class PrimaryCloud(Node):
         self.sharing._pre_step()
         self.sharing._averaging_server(averaging_deque)
         logging.info("Averaged model from each edge server")
+
+    def create_batch_and_cache(self):
+        self.create_batch()
+        if len(self.received_batch["data"]) != 0:
+            self.collected_dataset.add_batch(self.received_batch)
+
+    def create_batch(self):
+        batch_data = []
+        batch_target = []
+
+        for k in self.children:
+            data, target = self.batches_received[k].popleft()["params"]
+            batch_data.append(data)
+            batch_target.append(target)
+
+        self.received_batch = dict()
+        self.received_batch["data"] = torch.cat(batch_data)
+        self.received_batch["target"] = torch.cat(batch_target)
+
+        logging.info("Created batch from data received from clients")
+        logging.info("Type of data received: %s", self.received_batch["data"].dtype)
+
+    def fill_batch_till_target(self):
+        amountRecordsNeeded = (
+            self.train_batch_size - self.received_batch["data"].shape[0]
+        )
+        data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
+        if data_loader is not None:
+            iter_data_loader = iter(data_loader)
+            relooked_batch = next(iter_data_loader)
+            logging.info("Type of data relooked: %s", relooked_batch[0].dtype)
+            logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
+            self.batch["data"] = torch.cat(
+                (self.received_batch["data"], relooked_batch[0])
+            )
+            self.batch["target"] = torch.cat(
+                (self.received_batch["target"], relooked_batch[1])
+            )
+        else:
+            self.batch = self.received_batch
+
+    def train(self):
+        self.loss_amt = self.trainer.trainstep(
+            self.batch["data"], self.batch["target"].long()
+        )
+
+        logging.info(
+            "Trained model for one step with a loss of {}".format(self.loss_amt)
+        )
 
     def collect_stats(self):
         if self.iteration != 0:
@@ -126,6 +204,8 @@ class PrimaryCloud(Node):
         log_dir=".",
         weights_store_dir=".",
         log_level=logging.INFO,
+        train_batch_size=32,
+        learning_mode="H",
         *args
     ):
         torch.set_num_threads(1)
@@ -140,10 +220,19 @@ class PrimaryCloud(Node):
             log_dir,
             weights_store_dir,
             log_level,
+            train_batch_size,
+            learning_mode,
             *args
         )
 
-        self.run()
+        if self.learning_mode == "H":
+            self.runHybrid()
+        elif self.learning_mode == "OD":
+            self.runOnlyData()
+        elif self.learning_mode == "OW":
+            self.runOnlyWeights()
+        else:
+            raise ValueError("Learning mode must be one of H, OD, OW")
         logging.info("Primary cloud finished running")
 
     def instantiate(
@@ -156,6 +245,8 @@ class PrimaryCloud(Node):
         log_dir: str,
         weights_store_dir: str,
         log_level: int,
+        train_batch_size: int,
+        learning_mode: str,
         *args
     ):
         logging.info("Started process.")
@@ -168,10 +259,13 @@ class PrimaryCloud(Node):
             iterations,
             log_dir,
             weights_store_dir,
+            train_batch_size,
+            learning_mode,
         )
 
         self.peer_deques = dict()
 
+        self.collected_dataset = FlexDataset()
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
@@ -196,6 +290,8 @@ class PrimaryCloud(Node):
         iterations: int,
         log_dir: str,
         weights_store_dir: str,
+        train_batch_size: int,
+        learning_mode: str,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -208,6 +304,8 @@ class PrimaryCloud(Node):
         self.log_dir = log_dir
         self.weights_store_dir = weights_store_dir
         self.sent_disconnections = False
+        self.train_batch_size = train_batch_size
+        self.learning_mode = learning_mode
 
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])

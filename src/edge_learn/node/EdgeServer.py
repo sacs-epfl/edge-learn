@@ -24,14 +24,15 @@ class EdgeServer(Node):
     class DisconnectedException(Exception):
         pass
 
-    def run(self):
+    def runHybrid(self):
         try:
             self.initialize_run()
             while self.connected_to_primary_cloud:
                 self.get_model_from_primary_cloud()
                 self.send_model_to_clients()
                 self.get_data_from_clients()
-                self.create_batch()
+                self.create_batch_and_cache()
+                self.fill_batch_till_target()
                 self.train()
                 self.send_model_to_primary_cloud()
                 self.collect_stats()
@@ -40,8 +41,39 @@ class EdgeServer(Node):
         finally:
             self.finalize_run()
 
+    def runOnlyWeights(self):
+        try:
+            self.initialize_run()
+            while self.connected_to_primary_cloud:
+                self.get_model_from_primary_cloud()
+                self.send_model_to_clients()
+                self.get_model_from_clients_and_store_in_peer_deque()
+                self.average_model_from_peer_deques()
+                self.send_model_to_primary_cloud()
+                self.collect_stats()
+        except self.DisconnectedException:
+            pass
+        finally:
+            self.finalize_run()
+
+    def runOnlyData(self):
+        try:
+            self.initialize_run()
+            while self.connected_to_primary_cloud:
+                self.get_model_from_primary_cloud()
+                self.send_model_to_clients()
+                self.get_data_from_clients()
+                self.create_batch()
+                self.send_data_to_primary_cloud()
+                self.collect_stats()
+        except self.DisconnectedException:
+            pass
+        finally:
+            self.finalize_run()
+
     def initialize_run(self):
         self.rounds_to_test = self.test_after
+        self.peer_deques = dict()
 
     def get_model_from_primary_cloud(self):
         sender, data = self.receive_channel("MODEL")
@@ -65,6 +97,13 @@ class EdgeServer(Node):
 
         for client in self.children:
             self.communication.send(client, to_send)
+
+    def send_data_to_primary_cloud(self):
+        to_send = dict()
+        to_send["params"] = self.received_batch
+        to_send["iteration"] = self.iteration
+        to_send["CHANNEL"] = "DATA"
+        to_send["STATUS"] = "OK"
 
     def get_data_from_clients(self):
         self.batches_received = dict()
@@ -90,6 +129,42 @@ class EdgeServer(Node):
                 return False
         return True
 
+    def get_model_from_clients_and_store_in_peer_deque(self):
+        while not self.receive_from_all():
+            sender, data = self.receive_channel("MODEL")
+
+            if sender not in self.peer_deques:
+                self.peer_deques[sender] = deque()
+
+            if data["iteration"] == self.iteration:
+                self.peer_deques[sender].appendleft(data)
+            else:
+                self.peer_deques[sender].append(data)
+        logging.debug("Received model from each edge server")
+
+    def receive_from_all(self):
+        for k in self.children:
+            if (
+                (k not in self.peer_deques)
+                or len(self.peer_deques[k]) == 0
+                or self.peer_deques[k][0]["iteration"] != self.iteration
+            ):
+                return False
+        return True
+
+    def average_model_from_peer_deques(self):
+        averaging_deque = dict()
+        for client in self.children:
+            averaging_deque[client] = self.peer_deques[client]
+        self.sharing._pre_step()
+        self.sharing._averaging_server(averaging_deque)
+        logging.info("Averaged model from each edge server")
+
+    def create_batch_and_cache(self):
+        self.create_batch()
+        if len(self.received_batch["data"]) != 0:
+            self.collected_dataset.add_batch(self.received_batch)
+
     def create_batch(self):
         batch_data = []
         batch_target = []
@@ -106,6 +181,7 @@ class EdgeServer(Node):
         logging.info("Created batch from data received from clients")
         logging.info("Type of data received: %s", self.received_batch["data"].dtype)
 
+    def fill_batch_till_target(self):
         amountRecordsNeeded = (
             self.train_batch_size - self.received_batch["data"].shape[0]
         )
@@ -124,15 +200,7 @@ class EdgeServer(Node):
         else:
             self.batch = self.received_batch
 
-        if len(batch_data) != 0:
-            self.collected_dataset.add_batch(self.received_batch)
-
     def train(self):
-        logging.info("Type of batch data before training: %s", self.batch["data"].dtype)
-        logging.info(
-            "Type of batch target before training: %s", self.batch["target"].dtype
-        )
-
         self.loss_amt = self.trainer.trainstep(
             self.batch["data"], self.batch["target"].long()
         )
@@ -260,6 +328,7 @@ class EdgeServer(Node):
         log_level=logging.INFO,
         test_after=5,
         train_batch_size=32,
+        learning_mode="H",
         *args
     ):
         total_threads = os.cpu_count()
@@ -277,10 +346,18 @@ class EdgeServer(Node):
             log_level,
             test_after,
             train_batch_size,
+            learning_mode,
             *args
         )
 
-        self.run()
+        if self.learning_mode == "H":
+            self.runHybrid()
+        elif self.learning_mode == "OD":
+            self.runOnlyData()
+        elif self.learning_mode == "OW":
+            self.runOnlyWeights()
+        else:
+            raise ValueError("Learning mode must be one of: H, OD, OW")
         logging.info("Edge Server finished running")
 
     def instantiate(
@@ -294,6 +371,7 @@ class EdgeServer(Node):
         log_level: int,
         test_after: int,
         train_batch_size: int,
+        learning_mode: str,
         *args
     ):
         logging.info("Started process")
@@ -307,6 +385,7 @@ class EdgeServer(Node):
             weights_store_dir,
             test_after,
             train_batch_size,
+            learning_mode,
         )
 
         self.batches_received = dict()
@@ -339,6 +418,7 @@ class EdgeServer(Node):
         weights_store_dir: str,
         test_after: int,
         train_batch_size: int,
+        learning_mode: str,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -352,6 +432,7 @@ class EdgeServer(Node):
         self.test_after = test_after
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
+        self.learning_mode = learning_mode
 
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])
