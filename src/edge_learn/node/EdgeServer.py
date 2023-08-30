@@ -106,6 +106,8 @@ class EdgeServer(Node):
         to_send["CHANNEL"] = "DATA"
         to_send["STATUS"] = "OK"
 
+        self.communication.send(self.parents[0], to_send)
+
     def get_data_from_clients(self):
         self.batches_received = dict()
         while not self.receive_from_all_clients():
