@@ -133,7 +133,7 @@ class EdgeServer(Node):
                 self.peer_deques[sender].appendleft(data)
             else:
                 self.peer_deques[sender].append(data)
-        logging.debug("Received model from each edge server")
+        logging.debug("Received model from each client")
 
     def receive_from_all_clients(self, dict):
         for k in self.children:

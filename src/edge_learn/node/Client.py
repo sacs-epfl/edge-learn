@@ -97,6 +97,7 @@ class Client(Node):
         to_send["iteration"] = self.iteration
         to_send["STATUS"] = "OK"
         to_send["params"] = self.sharing.serialized_model()
+        to_send["degree"] = 1
         self.communication.send(self.parents[0], to_send)
 
     def train(self):
