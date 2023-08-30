@@ -71,7 +71,7 @@ class PrimaryCloud(Node):
 
     def get_data_from_edge_servers(self):
         self.batches_received = dict()
-        while not self.receive_from_all():
+        while not self.receive_from_all(self.batches_received):
             sender, data = self.receive_channel("DATA")
 
             if sender not in self.batches_received:
