@@ -235,7 +235,8 @@ class EdgeServer(Node):
                 "total_data_per_n": {},
             }
 
-        results_dict["train_loss"][self.iteration + 1] = self.loss_amt
+        if self.loss_amt:
+            results_dict["train_loss"][self.iteration + 1] = self.loss_amt
 
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
 
