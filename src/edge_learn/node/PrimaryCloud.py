@@ -10,6 +10,7 @@ from decentralizepy import utils
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from edge_learn.datasets.FlexDataset import FlexDataset
+from edge_learn.enums.LearningMode import LearningMode
 
 
 class PrimaryCloud(Node):
@@ -165,7 +166,7 @@ class PrimaryCloud(Node):
                 "total_data_per_n": {},
             }
 
-        if self.loss_amt:
+        if LearningMode(self.learning_mode) == LearningMode.ONLY_DATA:
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
 
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes

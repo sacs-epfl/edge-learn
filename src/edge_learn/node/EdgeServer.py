@@ -12,6 +12,7 @@ from decentralizepy import utils
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from edge_learn.datasets.FlexDataset import FlexDataset
+from edge_learn.enums.LearningMode import LearningMode
 
 
 class EdgeServer(Node):
@@ -235,7 +236,7 @@ class EdgeServer(Node):
                 "total_data_per_n": {},
             }
 
-        if self.loss_amt:
+        if LearningMode(self.learning_mode) == LearningMode.HYBRID:
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
 
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
@@ -287,7 +288,7 @@ class EdgeServer(Node):
             self.save_graphs(results_dict)
 
     def save_graphs(self, results_dict):
-        if self.loss_amt:
+        if LearningMode(self.learning_mode) == LearningMode.HYBRID:
             self.save_plot(
                 results_dict["train_loss"],
                 "train_loss",
