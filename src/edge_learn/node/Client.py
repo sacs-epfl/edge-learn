@@ -215,6 +215,8 @@ class Client(Node):
         self.last_dtype_target = torch.int64
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
+        self.init_optimizer(config["OPTIMIZER_PARAMS"])
+        self.init_trainer(config["TRAIN_PARAMS"])
 
         self.message_queue = dict()
         self.barrier = set()
