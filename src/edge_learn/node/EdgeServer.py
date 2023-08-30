@@ -287,13 +287,14 @@ class EdgeServer(Node):
             self.save_graphs(results_dict)
 
     def save_graphs(self, results_dict):
-        self.save_plot(
-            results_dict["train_loss"],
-            "train_loss",
-            "Training Loss",
-            "Communication Rounds",
-            os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
-        )
+        if self.loss_amt:
+            self.save_plot(
+                results_dict["train_loss"],
+                "train_loss",
+                "Training Loss",
+                "Communication Rounds",
+                os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
+            )
         self.save_plot(
             results_dict["test_acc"],
             "test_acc",
