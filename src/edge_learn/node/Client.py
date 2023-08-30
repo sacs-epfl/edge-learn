@@ -100,7 +100,7 @@ class Client(Node):
         self.communication.send(self.parents[0], to_send)
 
     def train(self):
-        data, target
+        data, target = None, None
         try:
             data, target = next(self.dataiter)
         except StopIteration:
