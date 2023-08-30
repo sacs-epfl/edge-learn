@@ -38,6 +38,8 @@ def create_node(node_type, rank, config_dir):
             "/results",
             "/results",
             cur_log_level,
+            params["train_batch_size"],
+            params["learning_mode"],
         )
     elif node_type == "edge":
         EdgeServer(
@@ -50,6 +52,7 @@ def create_node(node_type, rank, config_dir):
             cur_log_level,
             params["test_frequency"],
             params["train_batch_size"],
+            params["learning_mode"],
         )
     elif node_type == "client":
         Client(
@@ -60,6 +63,7 @@ def create_node(node_type, rank, config_dir):
             "/results",
             cur_log_level,
             params["batch_size_to_send_to_edge"],
+            params["learning_mode"],
         )
     else:
         print(f"Invalid node type: {node_type}")
