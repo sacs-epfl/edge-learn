@@ -101,7 +101,7 @@ class EdgeServer(Node):
 
     def send_data_to_primary_cloud(self):
         to_send = dict()
-        to_send["params"] = self.received_batch
+        to_send["params"] = (self.received_batch["data"], self.received_batch["target"])
         to_send["iteration"] = self.iteration
         to_send["CHANNEL"] = "DATA"
         to_send["STATUS"] = "OK"
