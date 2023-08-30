@@ -175,6 +175,7 @@ class EdgeServer(Node):
         logging.info("Type of data received: %s", self.received_batch["data"].dtype)
 
     def fill_batch_till_target(self):
+        self.batch = dict()
         current_batch_size = self.received_batch["data"].shape[0]
         amountRecordsNeeded = self.train_batch_size - current_batch_size
         if amountRecordsNeeded < 0:
