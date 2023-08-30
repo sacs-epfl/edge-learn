@@ -110,7 +110,7 @@ class EdgeServer(Node):
 
     def get_data_from_clients(self):
         self.batches_received = dict()
-        while not self.receive_from_all_clients():
+        while not self.receive_from_all_clients(self.batches_received):
             sender, data = self.receive_channel("DATA")
 
             if sender not in self.batches_received:
@@ -122,18 +122,8 @@ class EdgeServer(Node):
                 self.batches_received[sender].append(data)
         logging.info("Received data from all clients")
 
-    def receive_from_all_clients(self):
-        for k in self.children:
-            if (
-                (k not in self.batches_received)
-                or len(self.batches_received[k]) == 0
-                or self.batches_received[k][0]["iteration"] != self.iteration
-            ):
-                return False
-        return True
-
     def get_model_from_clients_and_store_in_peer_deque(self):
-        while not self.receive_from_all():
+        while not self.receive_from_all_clients(self.peer_deques):
             sender, data = self.receive_channel("MODEL")
 
             if sender not in self.peer_deques:
@@ -145,12 +135,12 @@ class EdgeServer(Node):
                 self.peer_deques[sender].append(data)
         logging.debug("Received model from each edge server")
 
-    def receive_from_all(self):
+    def receive_from_all_clients(self, dict):
         for k in self.children:
             if (
-                (k not in self.peer_deques)
-                or len(self.peer_deques[k]) == 0
-                or self.peer_deques[k][0]["iteration"] != self.iteration
+                (k not in dict)
+                or len(dict[k]) == 0
+                or dict[k][0]["iteration"] != self.iteration
             ):
                 return False
         return True
@@ -185,9 +175,11 @@ class EdgeServer(Node):
         logging.info("Type of data received: %s", self.received_batch["data"].dtype)
 
     def fill_batch_till_target(self):
-        amountRecordsNeeded = (
-            self.train_batch_size - self.received_batch["data"].shape[0]
-        )
+        current_batch_size = self.received_batch["data"].shape[0]
+        amountRecordsNeeded = self.train_batch_size - current_batch_size
+        if amountRecordsNeeded < 0:
+            self.batch = self.received_batch
+            return
         data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
         if data_loader is not None:
             iter_data_loader = iter(data_loader)
