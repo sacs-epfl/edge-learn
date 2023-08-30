@@ -124,9 +124,11 @@ class PrimaryCloud(Node):
         logging.info("Type of data received: %s", self.received_batch["data"].dtype)
 
     def fill_batch_till_target(self):
-        amountRecordsNeeded = (
-            self.train_batch_size - self.received_batch["data"].shape[0]
-        )
+        current_batch_size = self.received_batch["data"].shape[0]
+        amountRecordsNeeded = self.train_batch_size - current_batch_size
+        if amountRecordsNeeded < 0:
+            self.batch = self.received_batch
+            return
         data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
         if data_loader is not None:
             iter_data_loader = iter(data_loader)
