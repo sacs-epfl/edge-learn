@@ -13,6 +13,7 @@ from decentralizepy import utils
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from edge_learn.datasets.FlexDataset import FlexDataset
 from edge_learn.enums.LearningMode import LearningMode
+from edge_learn.utils.Graphing import create_and_save_plot
 
 
 class EdgeServer(Node):
@@ -73,7 +74,6 @@ class EdgeServer(Node):
             self.finalize_run()
 
     def initialize_run(self):
-        self.rounds_to_test = self.test_after
         self.peer_deques = dict()
 
     def get_model_from_primary_cloud(self):
@@ -224,8 +224,6 @@ class EdgeServer(Node):
         else:
             results_dict = {
                 "train_loss": {},
-                "test_loss": {},
-                "test_acc": {},
                 "total_bytes": {},
                 "total_meta": {},
                 "total_data_per_n": {},
@@ -244,16 +242,6 @@ class EdgeServer(Node):
             results_dict["total_data_per_n"][
                 self.iteration + 1
             ] = self.communication.total_data
-
-        self.rounds_to_test -= 1
-
-        if self.dataset.__testing__ and self.rounds_to_test == 0:
-            self.rounds_to_test = self.test_after
-            logging.info("Evaluating on test set.")
-            ta, tl = self.dataset.test(self.model, self.loss)
-            results_dict["test_acc"][self.iteration + 1] = ta
-            results_dict["test_loss"][self.iteration + 1] = tl
-
         with open(
             os.path.join(self.log_dir, "{}_results.json".format(self.rank)), "w"
         ) as of:
@@ -273,47 +261,23 @@ class EdgeServer(Node):
         logging.info("All neighbors disconnected. Process complete!")
 
     def save_data(self):
-        logging.info("Storing final weights and generating graphs")
         self.model.dump_weights(self.weights_store_dir, self.uid, self.iteration)
+        logging.info("Stored final weights")
+
+    def save_graphs(self):
         with open(
             os.path.join(self.log_dir, "{}_results.json".format(self.rank)),
             "r",
         ) as inf:
             results_dict = json.load(inf)
-            self.save_graphs(results_dict)
-
-    def save_graphs(self, results_dict):
-        if LearningMode(self.learning_mode) == LearningMode.HYBRID:
-            self.save_plot(
-                results_dict["train_loss"],
-                "train_loss",
-                "Training Loss",
-                "Communication Rounds",
-                os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
-            )
-        self.save_plot(
-            results_dict["test_acc"],
-            "test_acc",
-            "Test Accuracy",
-            "Communication Rounds",
-            os.path.join(self.log_dir, "{}_test_acc.png".format(self.rank)),
-        )
-        self.save_plot(
-            results_dict["test_loss"],
-            "test_loss",
-            "Test Loss",
-            "Communication Rounds",
-            os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
-        )
-
-    def save_plot(self, l, label, title, xlabel, filename):
-        plt.clf()
-        y_axis = [l[key] for key in l.keys()]
-        x_axis = list(map(int, l.keys()))
-        plt.plot(x_axis, y_axis, label=label)
-        plt.xlabel(xlabel)
-        plt.title(title)
-        plt.savefig(filename)
+            if LearningMode(self.learning_mode) == LearningMode.HYBRID:
+                create_and_save_plot(
+                    "Training Loss",
+                    results_dict["train_loss"],
+                    "Communication Rounds",
+                    "Training Loss",
+                    os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
+                )
 
     def __init__(
         self,
@@ -324,10 +288,8 @@ class EdgeServer(Node):
         log_dir=".",
         weights_store_dir=".",
         log_level=logging.INFO,
-        test_after=5,
         train_batch_size=32,
         learning_mode="H",
-        *args
     ):
         total_threads = os.cpu_count()
         max_threads = max(total_threads - mapping.get_procs_per_machine() - 1, 1)
@@ -342,10 +304,8 @@ class EdgeServer(Node):
             log_dir,
             weights_store_dir,
             log_level,
-            test_after,
             train_batch_size,
             learning_mode,
-            *args
         )
 
         if self.learning_mode == "H":
@@ -367,10 +327,8 @@ class EdgeServer(Node):
         log_dir: str,
         weights_store_dir: str,
         log_level: int,
-        test_after: int,
         train_batch_size: int,
         learning_mode: str,
-        *args
     ):
         logging.info("Started process")
 
@@ -381,7 +339,6 @@ class EdgeServer(Node):
             mapping,
             log_dir,
             weights_store_dir,
-            test_after,
             train_batch_size,
             learning_mode,
         )
@@ -414,7 +371,6 @@ class EdgeServer(Node):
         mapping: EdgeMapping,
         log_dir: str,
         weights_store_dir: str,
-        test_after: int,
         train_batch_size: int,
         learning_mode: str,
     ):
@@ -427,7 +383,6 @@ class EdgeServer(Node):
         self.children = self.mapping.get_children(self.uid)
         self.log_dir = log_dir
         self.weights_store_dir = weights_store_dir
-        self.test_after = test_after
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode

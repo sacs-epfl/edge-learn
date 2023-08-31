@@ -11,6 +11,7 @@ from decentralizepy import utils
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from edge_learn.datasets.FlexDataset import FlexDataset
 from edge_learn.enums.LearningMode import LearningMode
+from edge_learn.utils.Graphing import create_and_save_plot
 
 
 class PrimaryCloud(Node):
@@ -21,8 +22,10 @@ class PrimaryCloud(Node):
     """
 
     def runHybrid(self):
+        self.initialise_run()
         for iteration in range(self.iterations):
             self.initialize_iteration(iteration)
+            self.test()
             self.send_model_to_edge_servers()
             self.get_model_from_edge_servers_and_store_in_peer_deque()
             self.average_model_from_peer_deques()
@@ -30,8 +33,10 @@ class PrimaryCloud(Node):
         self.finalize_run()
 
     def runOnlyData(self):
+        self.initialise_run()
         for iteration in range(self.iterations):
             self.initialize_iteration(iteration)
+            self.test()
             self.send_model_to_edge_servers()
             self.get_data_from_edge_servers()
             self.create_batch_and_cache()
@@ -43,9 +48,24 @@ class PrimaryCloud(Node):
     def runOnlyWeights(self):
         self.runHybrid()
 
+    def initialise_run(self):
+        self.rounds_to_test = self.test_after
+
     def initialize_iteration(self, iteration: int):
         self.iteration = iteration
         self.peer_deques = dict()
+
+    def test(self):
+        self.rounds_to_test -= 1
+        self.test_acc = None
+        self.test_loss = None
+
+        if self.dataset.__testing__ and self.rounds_to_test == 0:
+            self.rounds_to_test = self.test_after
+            logging.info("Evaluating on test set.")
+            ta, tl = self.dataset.test(self.model, self.loss)
+            self.test_acc = ta
+            self.test_loss = tl
 
     def send_model_to_edge_servers(self):
         to_send = dict()
@@ -164,6 +184,8 @@ class PrimaryCloud(Node):
         else:
             results_dict = {
                 "train_loss": {},
+                "test_loss": {},
+                "test_acc": {},
                 "total_bytes": {},
                 "total_meta": {},
                 "total_data_per_n": {},
@@ -171,6 +193,10 @@ class PrimaryCloud(Node):
 
         if LearningMode(self.learning_mode) == LearningMode.ONLY_DATA:
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
+        if self.test_loss != None:
+            results_dict["test_loss"][self.iteration] = self.test_loss
+        if self.test_acc != None:
+            results_dict["test_acc"][self.iteration] = self.test_acc
 
         results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
 
@@ -190,9 +216,8 @@ class PrimaryCloud(Node):
 
     def finalize_run(self):
         self.disconnect_neighbors()
-        logging.info("Storing final weight")
-        self.model.dump_weights(self.weights_store_dir, self.uid, self.iteration)
-        logging.info("All neighbors disconnected. Process complete!")
+        self.save_data()
+        self.create_and_save_graphs()
 
     def disconnect_neighbors(self):
         if not self.sent_disconnections:
@@ -201,6 +226,40 @@ class PrimaryCloud(Node):
             for edge in self.children:
                 self.communication.send(edge, {"STATUS": "BYE", "CHANNEL": "MODEL"})
             self.sent_disconnections = True
+            logging.info("All neighbors disconnected. Process complete!")
+
+    def save_data(self):
+        logging.info("Storing final weight")
+        self.model.dump_weights(self.weights_store_dir, self.uid, self.iteration)
+
+    def create_and_save_graphs(self):
+        with open(
+            os.path.join(self.log_dir, "{}_results.json".format(self.rank)),
+            "r",
+        ) as inf:
+            results_dict = json.load(inf)
+            if LearningMode(self.learning_mode) == LearningMode.ONLY_DATA:
+                create_and_save_plot(
+                    "Training Loss",
+                    results_dict["train_loss"],
+                    "Communication Rounds",
+                    "Training Loss",
+                    os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
+                )
+            create_and_save_plot(
+                "Test Accuracy",
+                results_dict["test_acc"],
+                "Communication Rounds",
+                "Test Accuracy (%)",
+                os.path.join(self.log_dir, "{}_test_acc.png".format(self.rank)),
+            )
+            create_and_save_plot(
+                "Test Loss",
+                results_dict["test_loss"],
+                "Communication Rounds",
+                "Test Loss",
+                os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
+            )
 
     def __init__(
         self,
@@ -212,6 +271,7 @@ class PrimaryCloud(Node):
         log_dir=".",
         weights_store_dir=".",
         log_level=logging.INFO,
+        test_after=5,
         train_batch_size=32,
         learning_mode="H",
         *args
@@ -228,6 +288,7 @@ class PrimaryCloud(Node):
             log_dir,
             weights_store_dir,
             log_level,
+            test_after,
             train_batch_size,
             learning_mode,
             *args
@@ -253,9 +314,9 @@ class PrimaryCloud(Node):
         log_dir: str,
         weights_store_dir: str,
         log_level: int,
+        test_after: int,
         train_batch_size: int,
         learning_mode: str,
-        *args
     ):
         logging.info("Started process.")
 
@@ -267,6 +328,7 @@ class PrimaryCloud(Node):
             iterations,
             log_dir,
             weights_store_dir,
+            test_after,
             train_batch_size,
             learning_mode,
         )
@@ -298,6 +360,7 @@ class PrimaryCloud(Node):
         iterations: int,
         log_dir: str,
         weights_store_dir: str,
+        test_after: int,
         train_batch_size: int,
         learning_mode: str,
     ):
@@ -311,6 +374,7 @@ class PrimaryCloud(Node):
         self.iterations = iterations
         self.log_dir = log_dir
         self.weights_store_dir = weights_store_dir
+        self.test_after = test_after
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
