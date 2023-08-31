@@ -242,21 +242,21 @@ class PrimaryCloud(Node):
                 create_and_save_plot(
                     "Training Loss",
                     results_dict["train_loss"],
-                    "Communication Rounds",
+                    "Rounds",
                     "Training Loss",
                     os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
                 )
             create_and_save_plot(
                 "Test Accuracy",
                 results_dict["test_acc"],
-                "Communication Rounds",
+                "Rounds",
                 "Test Accuracy (%)",
                 os.path.join(self.log_dir, "{}_test_acc.png".format(self.rank)),
             )
             create_and_save_plot(
                 "Test Loss",
                 results_dict["test_loss"],
-                "Communication Rounds",
+                "Rounds",
                 "Test Loss",
                 os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
             )

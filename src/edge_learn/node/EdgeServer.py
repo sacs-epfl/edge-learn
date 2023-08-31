@@ -274,7 +274,7 @@ class EdgeServer(Node):
                 create_and_save_plot(
                     "Training Loss",
                     results_dict["train_loss"],
-                    "Communication Rounds",
+                    "Rounds",
                     "Training Loss",
                     os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
                 )
