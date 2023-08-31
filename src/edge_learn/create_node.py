@@ -38,6 +38,7 @@ def create_node(node_type, rank, config_dir):
             "/results",
             "/results",
             cur_log_level,
+            params["test_frequency"],
             params["train_batch_size"],
             params["learning_mode"],
         )
@@ -50,7 +51,6 @@ def create_node(node_type, rank, config_dir):
             "/results",
             "/results",
             cur_log_level,
-            params["test_frequency"],
             params["train_batch_size"],
             params["learning_mode"],
         )

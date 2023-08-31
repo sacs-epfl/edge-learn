@@ -161,7 +161,6 @@ class Client(Node):
         log_level: logging = logging.INFO,
         batch_size_to_send: int = 64,
         learning_mode: str = "H",
-        *args
     ):
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
@@ -175,7 +174,6 @@ class Client(Node):
             log_level,
             batch_size_to_send,
             learning_mode,
-            *args
         )
 
         if self.learning_mode == "H":
@@ -197,7 +195,6 @@ class Client(Node):
         log_level: logging,
         batch_size_to_send: int,
         learning_mode: str,
-        *args
     ):
         logging.info("Started process")
 
