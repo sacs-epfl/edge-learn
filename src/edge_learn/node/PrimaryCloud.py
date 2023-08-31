@@ -276,9 +276,6 @@ class PrimaryCloud(Node):
         learning_mode="H",
         *args
     ):
-        torch.set_num_threads(1)
-        torch.set_num_interop_threads(1)
-
         self.instantiate(
             rank,
             machine_id,
@@ -350,6 +347,8 @@ class PrimaryCloud(Node):
 
         self.init_sharing(config["SHARING"])
 
+        self.set_threads()
+
         print("Initialized primary cloud")
 
     def cache_fields(
@@ -387,3 +386,14 @@ class PrimaryCloud(Node):
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, 1, **comm_params
         )
+
+    def set_threads(self):
+        if self.learning_mode == LearningMode.ONLY_DATA:
+            total_threads = os.cpu_count()
+            max_threads = max(
+                total_threads - self.mapping.get_procs_per_machine() - 1, 1
+            )
+            torch.set_num_threads(max_threads)
+        else:
+            torch.set_num_threads(1)
+        torch.set_num_interop_threads(1)

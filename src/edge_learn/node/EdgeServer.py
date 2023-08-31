@@ -291,11 +291,6 @@ class EdgeServer(Node):
         train_batch_size=32,
         learning_mode="H",
     ):
-        total_threads = os.cpu_count()
-        max_threads = max(total_threads - mapping.get_procs_per_machine() - 1, 1)
-        torch.set_num_threads(max_threads)
-        torch.set_num_interop_threads(1)
-
         self.instantiate(
             rank,
             machine_id,
@@ -362,6 +357,8 @@ class EdgeServer(Node):
 
         self.init_sharing(config["SHARING"])
 
+        self.set_threads()
+
         print("Initialized Edge Server")
 
     def cache_fields(
@@ -395,3 +392,14 @@ class EdgeServer(Node):
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, 1, **comm_params
         )
+
+    def set_threads(self):
+        if self.learning_mode == LearningMode.HYBRID:
+            total_threads = os.cpu_count()
+            max_threads = max(
+                total_threads - self.mapping.get_procs_per_machine() - 1, 1
+            )
+            torch.set_num_threads(max_threads)
+        else:
+            torch.set_num_threads(1)
+        torch.set_num_interop_threads(1)
