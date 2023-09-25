@@ -9,10 +9,9 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 
-from decentralizepy.src.decentralizepy.datasets.Dataset import Dataset
-from decentralizepy.src.decentralizepy.models.Model import Model
+from decentralizepy.datasets.Dataset import Dataset
 from edge_learn.mappings.EdgeMapping import EdgeMapping
-from decentralizepy.src.decentralizepy.datasets.Partitioner import DataPartitioner
+from decentralizepy.datasets.Partitioner import DataPartitioner
 
 NUM_CLASSES = 1000
 
