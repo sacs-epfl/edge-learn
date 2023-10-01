@@ -197,7 +197,8 @@ class ResNet18(Model):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
+        out = F.avg_pool2d(out, 7)
+        logging.debug(out)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
