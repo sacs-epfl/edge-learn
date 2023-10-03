@@ -342,6 +342,7 @@ class EdgeServer(Node):
         self.peer_deques = dict()
 
         self.collected_dataset = FlexDataset()
+        self.init_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_trainer(config["TRAIN_PARAMS"])
@@ -382,6 +383,11 @@ class EdgeServer(Node):
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
+
+    def init_model(self, dataset_configs):
+        dataset_module = importlib.import_module(dataset_configs["dataset_package"])
+        self.model_class = getattr(dataset_module, dataset_configs["model_class"])
+        self.model = self.model_class()
 
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])
