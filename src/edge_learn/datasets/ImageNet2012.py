@@ -23,6 +23,8 @@ class ImageNet2012(Dataset):
         rank: int,
         machine_id: int,
         mapping: EdgeMapping,
+        train=True,
+        test=True,
         random_seed: int = 1234,
         only_local=False,
         train_dir="",
@@ -42,6 +44,9 @@ class ImageNet2012(Dataset):
             test_batch_size,
         )
 
+        self.__training__ = train
+        self.__testing__ = test
+
         # Online Preprocessing
         self.transform = transforms.Compose(
             [
@@ -55,9 +60,11 @@ class ImageNet2012(Dataset):
         )
 
         if self.__training__:
+            logging.info("Loading trainset")
             self.load_trainset()
 
         if self.__testing__:
+            logging.ingo("loading testset")
             self.load_testset()
 
     def load_trainset(self):
@@ -78,13 +85,14 @@ class ImageNet2012(Dataset):
         ).use(self.dataset_id)
 
     def load_testset(self):
-        full_testset = torchvision.datasets.ImageNet(
-            root=self.test_dir, split="val", transform=self.transform
-        )
+        # Load dataset without transformations to quickly get labels
+        full_testset = torchvision.datasets.ImageNet(root=self.test_dir, split="val")
 
         # Group image indices by category
         category_indices = {}
-        for idx, (_, label) in enumerate(full_testset):
+        for idx, (_, label) in enumerate(
+            full_testset.imgs
+        ):  # Using internal structure to get labels without loading images
             if label not in category_indices:
                 category_indices[label] = []
             category_indices[label].append(idx)
@@ -94,8 +102,15 @@ class ImageNet2012(Dataset):
         for label, indices in category_indices.items():
             selected_indices.extend(indices[:2])
 
+        # Reload the dataset with transformations
+        full_testset_with_transforms = torchvision.datasets.ImageNet(
+            root=self.test_dir, split="val", transform=self.transform
+        )
+
         # Create subset using selected indices
-        self.testset = torch.utils.data.Subset(full_testset, selected_indices)
+        self.testset = torch.utils.data.Subset(
+            full_testset_with_transforms, selected_indices
+        )
 
     def get_trainset(self, batch_size=1, shuffle=False):
         if self.__training__:
