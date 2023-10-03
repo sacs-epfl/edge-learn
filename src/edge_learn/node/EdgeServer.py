@@ -342,7 +342,6 @@ class EdgeServer(Node):
         self.peer_deques = dict()
 
         self.collected_dataset = FlexDataset()
-        self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_trainer(config["TRAIN_PARAMS"])

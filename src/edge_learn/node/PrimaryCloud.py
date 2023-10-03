@@ -378,6 +378,29 @@ class PrimaryCloud(Node):
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
 
+    def init_dataset_model(self, dataset_configs):
+        dataset_module = importlib.import_module(dataset_configs["dataset_package"])
+        self.dataset_class = getattr(dataset_module, dataset_configs["dataset_class"])
+        random_seed = (
+            dataset_configs["random_seed"] if "random_seed" in dataset_configs else 97
+        )
+        torch.manual_seed(random_seed)
+        self.dataset_params = utils.remove_keys(
+            dataset_configs,
+            ["dataset_package", "dataset_class", "model_class", "random_seed"],
+        )
+        self.dataset = self.dataset_class(
+            self.rank,
+            self.machine_id,
+            self.mapping,
+            train=False,
+            test=True,
+            **self.dataset_params
+        )
+        logging.info("Dataset instantiation complete.")
+        self.model_class = getattr(dataset_module, dataset_configs["model_class"])
+        self.model = self.model_class()
+
     def init_comm(self, comm_configs):
         comm_module = importlib.import_module(comm_configs["comm_package"])
         comm_class = getattr(comm_module, comm_configs["comm_class"])

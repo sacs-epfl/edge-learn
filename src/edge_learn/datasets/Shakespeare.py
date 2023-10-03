@@ -153,6 +153,8 @@ class Shakespeare(Dataset):
         rank: int,
         machine_id: int,
         mapping: EdgeMapping,
+        train=True,
+        test=True,
         random_seed: int = 1234,
         only_local=False,
         train_dir="",
@@ -199,6 +201,9 @@ class Shakespeare(Dataset):
             sizes,
             test_batch_size,
         )
+        self.__training__ = train
+        self.__testing__ = test
+
         if self.__training__:
             self.load_trainset()
 
