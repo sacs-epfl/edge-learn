@@ -64,7 +64,7 @@ class ImageNet2012(Dataset):
             self.load_trainset()
 
         if self.__testing__:
-            logging.ingo("loading testset")
+            logging.info("loading testset")
             self.load_testset()
 
     def load_trainset(self):
