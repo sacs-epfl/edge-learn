@@ -78,9 +78,24 @@ class ImageNet2012(Dataset):
         ).use(self.dataset_id)
 
     def load_testset(self):
-        self.testset = torchvision.datasets.ImageNet(
+        full_testset = torchvision.datasets.ImageNet(
             root=self.test_dir, split="val", transform=self.transform
         )
+
+        # Group image indices by category
+        category_indices = {}
+        for idx, (_, label) in enumerate(full_testset):
+            if label not in category_indices:
+                category_indices[label] = []
+            category_indices[label].append(idx)
+
+        # Select two images from each category
+        selected_indices = []
+        for label, indices in category_indices.items():
+            selected_indices.extend(indices[:2])
+
+        # Create subset using selected indices
+        self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
     def get_trainset(self, batch_size=1, shuffle=False):
         if self.__training__:
