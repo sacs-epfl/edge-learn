@@ -117,7 +117,7 @@ class ImageNet2012(Dataset):
     def get_testset(self):
         if self.__testing__:
             return DataLoader(
-                self.testset, batch_size=self.test_batch_size, num_workers=8
+                self.testset, batch_size=self.test_batch_size, num_workers=4
             )
         raise RuntimeError("Test set not initialised!")
 
