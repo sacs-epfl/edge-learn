@@ -100,7 +100,7 @@ class ImageNet2012(Dataset):
         # Select two images from each category
         selected_indices = []
         for label, indices in category_indices.items():
-            selected_indices.extend(indices[:2])
+            selected_indices.extend(indices[:1])
 
         # Reload the dataset with transformations
         full_testset_with_transforms = torchvision.datasets.ImageNet(
