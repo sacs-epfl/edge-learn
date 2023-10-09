@@ -90,27 +90,24 @@ class ImageNet2012(Dataset):
 
         # Group image indices by category
         category_indices = {}
-        for idx, (_, label) in enumerate(
-            full_testset.imgs
-        ):  # Using internal structure to get labels without loading images
+        for idx, (_, label) in enumerate(full_testset.imgs):
             if label not in category_indices:
                 category_indices[label] = []
             category_indices[label].append(idx)
 
-        # Select two images from each category
+        # Select one image from each category
         selected_indices = []
         for label, indices in category_indices.items():
-            selected_indices.extend(indices[:2])
+            selected_indices.extend(indices[:1])
 
-        # Reload the dataset with transformations
-        full_testset_with_transforms = torchvision.datasets.ImageNet(
-            root=self.test_dir, split="val", transform=self.transform
-        )
+        # Apply transformations to selected images
+        transformed_images = [
+            self.transform(full_testset[i][0]) for i in selected_indices
+        ]
+        transformed_labels = [full_testset[i][1] for i in selected_indices]
 
-        # Create subset using selected indices
-        self.testset = torch.utils.data.Subset(
-            full_testset_with_transforms, selected_indices
-        )
+        # Combine the transformed images and labels to create a custom dataset
+        self.testset = list(zip(transformed_images, transformed_labels))
 
     def get_trainset(self, batch_size=1, shuffle=False):
         if self.__training__:
@@ -119,7 +116,9 @@ class ImageNet2012(Dataset):
 
     def get_testset(self):
         if self.__testing__:
-            return DataLoader(self.testset, batch_size=self.test_batch_size)
+            return DataLoader(
+                self.testset, batch_size=self.test_batch_size, num_workers=8
+            )
         raise RuntimeError("Test set not initialised!")
 
     def test(self, model, loss):
