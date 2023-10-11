@@ -69,9 +69,11 @@ class ImageNet2012(Dataset):
             self.load_testset()
 
     def load_trainset(self):
+        logging.info("Starting to load the trainset...")
         trainset = torchvision.datasets.ImageNet(
             root=self.train_dir, split="train", transform=self.transform
         )
+        logging.info("Full trainset loaded.")
         c_len = len(trainset)
 
         if self.sizes == None:
@@ -86,8 +88,11 @@ class ImageNet2012(Dataset):
         ).use(self.dataset_id)
 
     def load_testset(self):
-        # Load dataset without transformations to quickly get labels
+        logging.info("Starting to load the testset...")
+
+        # Load dataset without transformations to quickly get labels=
         full_testset = torchvision.datasets.ImageNet(root=self.test_dir, split="val")
+        logging.info("Full testset loaded.")
 
         # Group image indices by category
         category_indices = {}
@@ -95,6 +100,7 @@ class ImageNet2012(Dataset):
             if label not in category_indices:
                 category_indices[label] = []
             category_indices[label].append(idx)
+        logging.info("Grouped image indices by category.")
 
         # Select one image from each category
         selected_indices = []
