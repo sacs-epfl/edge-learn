@@ -172,15 +172,26 @@ class ImageNet2012(Dataset):
 
 
 class ResNet18(Model):
-    def __init__(self, num_classes=1000, pretrained=True):
+    def __init__(
+        self,
+        num_classes=1000,
+        pretrained=True,
+        cifar_weights_path="datasets/weights/resnet18_CIFAR100.bin",
+    ):
         super(ResNet18, self).__init__()
 
-        # Load the pre-trained ResNet-18 model
-        self.resnet18 = models.resnet18(pretrained=pretrained)
+        self.resnet18 = models.resnet18(
+            pretrained=False
+        )  # Initialize without ImageNet weights
 
-        # If the number of classes for your task is different from ImageNet, modify the final layer
-        if num_classes != 1000:
-            self.resnet18.fc = nn.Linear(self.resnet18.fc.in_features, num_classes)
+        # If pretrained is True, load the CIFAR-100 weights
+        if pretrained:
+            self.resnet18.load_state_dict(
+                torch.load(cifar_weights_path, map_location="cpu")
+            )
+
+        # Adjust the final layer to match the number of classes
+        self.resnet18.fc = nn.Linear(self.resnet18.fc.in_features, num_classes)
 
     def forward(self, x):
         return self.resnet18(x)
