@@ -176,21 +176,14 @@ class ResNet18(Model):
         self,
         num_classes=1000,
         pretrained=True,
-        cifar_weights_path="datasets/weights/resnet18_CIFAR100.bin",
     ):
         super(ResNet18, self).__init__()
 
-        self.resnet18 = models.resnet18(
-            pretrained=False
-        )  # Initialize without ImageNet weights
-
-        # If pretrained is True, load the CIFAR-100 weights
+        self.resnet18 = models.resnet18(weights=None)
         if pretrained:
-            self.resnet18.load_state_dict(
-                torch.load(cifar_weights_path, map_location="cpu")
-            )
+            state_dict = torch.load("datasets/weights/resnet18_CIFAR100.bin", map="cpu")
+            self.resnet18.load_state_dict(state_dict)
 
-        # Adjust the final layer to match the number of classes
         self.resnet18.fc = nn.Linear(self.resnet18.fc.in_features, num_classes)
 
     def forward(self, x):
