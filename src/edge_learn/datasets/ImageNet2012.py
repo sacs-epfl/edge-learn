@@ -171,11 +171,7 @@ class ImageNet2012(Dataset):
         return accuracy, loss_val
 
 
-import torch
-import torchvision.models as models
-
-
-class ResNet18(models.Module):
+class ResNet18(Model):
     def __init__(self, pretrained=True):
         super(ResNet18, self).__init__()
 
