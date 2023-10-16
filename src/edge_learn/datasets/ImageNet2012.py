@@ -181,7 +181,9 @@ class ResNet18(Model):
 
         self.resnet18 = models.resnet18(weights=None)
         if pretrained:
-            state_dict = torch.load("datasets/weights/resnet18_CIFAR100.bin", map="cpu")
+            state_dict = torch.load(
+                "datasets/weights/resnet18_CIFAR100.bin", map_location="cpu"
+            )
             self.resnet18.load_state_dict(state_dict)
 
         self.resnet18.fc = nn.Linear(self.resnet18.fc.in_features, num_classes)
