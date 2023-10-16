@@ -186,7 +186,11 @@ class ResNet18(Model):
             state_dict = torch.load(
                 "datasets/weights/resnet18_CIFAR100.bin", map_location="cpu"
             )
-            state_dict = {k: v for k, v in state_dict.items() if "fc" not in k}
+            state_dict = {
+                k: v
+                for k, v in state_dict.items()
+                if ("fc" not in k and "conv1" not in k)
+            }
             self.resnet18.load_state_dict(state_dict, strict=False)
 
             # Step 4: Restore the original conv1 layer back to the model
