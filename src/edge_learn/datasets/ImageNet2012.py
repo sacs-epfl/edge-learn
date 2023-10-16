@@ -171,25 +171,29 @@ class ImageNet2012(Dataset):
         return accuracy, loss_val
 
 
-class ResNet18(Model):
-    def __init__(
-        self,
-        pretrained=True,
-    ):
+import torch
+import torchvision.models as models
+
+
+class ResNet18(models.Module):
+    def __init__(self, pretrained=True):
         super(ResNet18, self).__init__()
 
+        # Step 1: Create the ResNet-18 model without any weights
         self.resnet18 = models.resnet18(weights=None)
 
-        if pretrained:
-            original_conv1 = self.resnet18.conv1
+        # Step 2: Store the original conv1 layer
+        original_conv1 = self.resnet18.conv1
 
+        if pretrained:
+            # Step 3: Load the CIFAR-100 weights into the model (excluding the fully connected layer)
             state_dict = torch.load(
                 "datasets/weights/resnet18_CIFAR100.bin", map_location="cpu"
             )
-            # Filter out last layer weights as we'll initialize them separately
             state_dict = {k: v for k, v in state_dict.items() if "fc" not in k}
             self.resnet18.load_state_dict(state_dict, strict=False)
 
+            # Step 4: Restore the original conv1 layer back to the model
             self.resnet18.conv1 = original_conv1
 
             # Modify the last fully connected layer for 1000 classes of ImageNet
