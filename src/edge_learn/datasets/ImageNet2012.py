@@ -174,19 +174,27 @@ class ImageNet2012(Dataset):
 class ResNet18(Model):
     def __init__(
         self,
-        num_classes=1000,
         pretrained=True,
     ):
         super(ResNet18, self).__init__()
 
         self.resnet18 = models.resnet18(weights=None)
+
         if pretrained:
+            original_conv1 = self.resnet18.conv1
+
             state_dict = torch.load(
                 "datasets/weights/resnet18_CIFAR100.bin", map_location="cpu"
             )
-            self.resnet18.load_state_dict(state_dict)
+            # Filter out last layer weights as we'll initialize them separately
+            state_dict = {k: v for k, v in state_dict.items() if "fc" not in k}
+            self.resnet18.load_state_dict(state_dict, strict=False)
 
-        self.resnet18.fc = nn.Linear(self.resnet18.fc.in_features, num_classes)
+            self.resnet18.conv1 = original_conv1
+
+            # Modify the last fully connected layer for 1000 classes of ImageNet
+            fc_in_features = self.resnet18.fc.in_features
+            self.resnet18.fc = torch.nn.Linear(fc_in_features, 1000)
 
     def forward(self, x):
         return self.resnet18(x)
