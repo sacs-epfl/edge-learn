@@ -37,8 +37,18 @@ class TCP(Communication):
             Full address of the process using TCP
 
         """
-        machine_addr = socket.gethostbyname(self.ip_addrs[str(machine_id)])
-        port = (2 * rank + 1) + self.offset
+        machine_config = self.ip_config[str(machine_id)]
+        machine_addr = socket.gethostbyname(machine_config["host"])
+
+        # Check if it's a cloud, edge, or client node and fetch the appropriate port
+        if rank == -1:  # cloud
+            port = machine_config["cloud_port"]
+        elif rank == 0:  # edge
+            port = machine_config["edge_port"]
+        else:  # client
+            # Note: you may need to handle cases where rank exceeds the number of client ports available.
+            port = machine_config["client_ports"][rank - 1]
+
         assert port > 0
         return "tcp://{}:{}".format(machine_addr, port)
 
@@ -48,7 +58,7 @@ class TCP(Communication):
         machine_id,
         mapping,
         total_procs,
-        addresses_filepath,
+        ip_config_filepath,
         offset=9000,
         recv_timeout=50,
     ):
@@ -75,8 +85,8 @@ class TCP(Communication):
         """
         super().__init__(rank, machine_id, mapping, total_procs)
 
-        with open(addresses_filepath) as addrs:
-            self.ip_addrs = json.load(addrs)
+        with open(ip_config_filepath) as ip_config:
+            self.ip_config = json.load(ip_config)
 
         self.total_procs = total_procs
         self.rank = rank
