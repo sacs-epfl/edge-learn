@@ -18,6 +18,15 @@ from decentralizepy.datasets.Partitioner import DataPartitioner
 NUM_CLASSES = 1000
 
 
+"""
+Download the dataset from https://image-net.org/challenges/LSVRC/2012/2012-downloads.php
+You need to download Development Kit (Tasks 1 & 2), Training images (Tasks 1 & 2), 
+    and Validatio images (all tasks)
+Place all in the same directory, do not extract. 
+Launch ./docker_run.sh [DIRECTORY OF IMAGENET]. It will parse all the files for you.
+"""
+
+
 class ImageNet2012(Dataset):
     def __init__(
         self,
