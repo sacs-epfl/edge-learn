@@ -35,6 +35,8 @@ class Training:
         self.batch_size = utils.conditional_value(batch_size, "", int(1))
         self.shuffle = utils.conditional_value(shuffle, "", False)
 
+        logging.debug("My uid: " + self.uid)
+
         logging.debug("Gpu filepath: " + gpu_mapping_filepath)
         with open(gpu_mapping_filepath, "r") as f:
             self.gpu_mapping = json.load(f)
