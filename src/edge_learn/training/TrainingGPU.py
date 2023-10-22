@@ -35,10 +35,12 @@ class Training:
         self.batch_size = utils.conditional_value(batch_size, "", int(1))
         self.shuffle = utils.conditional_value(shuffle, "", False)
 
+        logging.debug("Gpu filepath: " + gpu_mapping_filepath)
         with open(gpu_mapping_filepath, "r") as f:
             self.gpu_mapping = json.load(f)
 
         self.gpus_to_use = self.gpu_mapping.get(self.uid, [])
+        logging.debug("Using gpus: " + self.gpus_to_use)
 
     def reset_optimizer(self, optimizer):
         self.optimizer = optimizer
