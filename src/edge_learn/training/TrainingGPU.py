@@ -78,7 +78,7 @@ class Training:
         ):
             device = f"cuda:{gpu}"
             # Clone the model and optimizer for this GPU
-            model_gpu = self.model.to(device).clone().to(device)
+            model_gpu = self.model.to(device)
 
             # Move data and target split to this GPU
             data_split, target_split = data_split.to(device), target_split.to(device)
