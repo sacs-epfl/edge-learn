@@ -42,7 +42,7 @@ class Training:
             self.gpu_mapping = json.load(f)
 
         self.gpus_to_use = self.gpu_mapping.get(str(self.uid), [])
-        logging.debug("Using gpus: " + ", ".join(self.gpus_to_use))
+        logging.debug("Using gpus: " + ", ".join(map(str, self.gpus_to_use)))
 
     def reset_optimizer(self, optimizer):
         self.optimizer = optimizer
