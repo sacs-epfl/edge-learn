@@ -10,7 +10,7 @@ create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
     echo "Running primary cloud"
-    docker run -d -p $cloud_port:1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=8g --name primary_cloud-$machine_id edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config
+    docker run --gpus all -d -p $cloud_port:1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=8g --name primary_cloud-$machine_id edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config
 }
 
 is_primary_cloud() {
@@ -31,7 +31,7 @@ create_edge_server() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/edge_server
     echo "Running edge server"
-    docker run -d -p $edge_port:1000 -v $base_result_dir/edge_server:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --name edge_server-$machine_id edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
+    docker run --gpus all -d -p $edge_port:1000 -v $base_result_dir/edge_server:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --name edge_server-$machine_id edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
 }
 
 create_client() {
@@ -39,7 +39,7 @@ create_client() {
     local base_result_dir=$2
     mkdir -p $base_result_dir/client_$i
     echo "Running client $i"
-    docker run -d -p ${client_ports[$i]}:1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --name client_$i-$machine_id edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
+    docker run --gpus all -d -p ${client_ports[$i]}:1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --name client_$i-$machine_id edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
 }
 
 create_clients() {
