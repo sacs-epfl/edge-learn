@@ -2,9 +2,9 @@
 
 machine_id=$(jq -r '.machine_id' config/params.json)
 cloud_machine_id=$(jq -r '.cloud_machine_id' config/params.json)
-cloud_port=$(jq -r ".\"$machine_id\".cloud_port" ip.json)
-edge_port=$(jq -r ".\"$machine_id\".edge_port" ip.json)
-client_ports=($(jq -r ".\"$machine_id\".client_ports[]" ip.json))
+cloud_port=$(jq -r ".\"$machine_id\".cloud_port" config/ip.json)
+edge_port=$(jq -r ".\"$machine_id\".edge_port" config/ip.json)
+client_ports=($(jq -r ".\"$machine_id\".client_ports[]" config/ip.json))
 
 create_primary_cloud() {
     local base_result_dir=$1
