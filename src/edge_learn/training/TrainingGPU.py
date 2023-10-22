@@ -96,9 +96,11 @@ class Training:
         # Average the gradients across GPUs
         avg_gradients = {}
         for name in gradients[0].keys():
-            avg_gradients[name] = torch.stack([grad[name] for grad in gradients]).mean(
-                dim=0
+            # Move all gradients to a consistent device before stacking
+            stacked_grads = torch.stack(
+                [grad[name].to(f"cuda:{self.gpus_to_use[0]}") for grad in gradients]
             )
+            avg_gradients[name] = stacked_grads.mean(dim=0)
 
         # Apply the averaged gradients to the main model
         self.model.zero_grad()
