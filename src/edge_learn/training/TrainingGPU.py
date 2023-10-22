@@ -2,6 +2,7 @@ import logging
 
 import torch
 import json
+import copy
 
 from decentralizepy import utils
 
@@ -73,12 +74,17 @@ class Training:
         # Create a list to hold gradients from each GPU
         gradients = []
 
+        primaryModelGpu = self.model.to(f"cuda:{self.gpus_to_use[0]}")
+
         for gpu, (data_split, target_split) in zip(
             self.gpus_to_use, zip(data_splits, target_splits)
         ):
             device = f"cuda:{gpu}"
             # Clone the model and optimizer for this GPU
-            model_gpu = self.model.to(device)
+            if gpu == self.gpus_to_use[0]:
+                model_gpu = primaryModelGpu
+            else:
+                model_gpu = copy.deepcopy(primaryModelGpu).to(device)
 
             # Move data and target split to this GPU
             data_split, target_split = data_split.to(device), target_split.to(device)
@@ -96,18 +102,18 @@ class Training:
         # Average the gradients across GPUs
         avg_gradients = {}
         for name in gradients[0].keys():
-            # Move all gradients to a consistent device before stacking
+            # Stack gradients from all GPUs together
             stacked_grads = torch.stack(
                 [grad[name].to(f"cuda:{self.gpus_to_use[0]}") for grad in gradients]
             )
+            # Compute the average gradient
             avg_gradients[name] = stacked_grads.mean(dim=0)
 
-        # Apply the averaged gradients to the main model
-        self.model.zero_grad()
+        # Update the main model's gradients with the averaged gradients
         for name, param in self.model.named_parameters():
             param.grad = avg_gradients[name]
 
-        # Perform optimizer step on the main model
+        # Optimize the main model
         self.optimizer.step()
 
         return loss_val.item()
