@@ -98,6 +98,7 @@ class EdgeServer(Node):
 
         for client in self.children:
             self.communication.send(client, to_send)
+        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
 
     def send_data_to_primary_cloud(self):
         to_send = dict()
@@ -107,6 +108,7 @@ class EdgeServer(Node):
         to_send["STATUS"] = "OK"
 
         self.communication.send(self.parents[0], to_send)
+        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
 
     def get_data_from_clients(self):
         self.batches_received = dict()
@@ -213,6 +215,7 @@ class EdgeServer(Node):
         to_send["STATUS"] = "OK"
 
         self.communication.send(self.parents[0], to_send)
+        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
 
     def collect_stats(self):
         if self.iteration != 0:
@@ -224,15 +227,17 @@ class EdgeServer(Node):
         else:
             results_dict = {
                 "train_loss": {},
-                "total_bytes": {},
+                "total_bytes_sent_to_each_client": {},
+                "total_bytes_sent_to_cloud": {},
                 "total_meta": {},
                 "total_data_per_n": {},
             }
 
         if LearningMode(self.learning_mode) == LearningMode.HYBRID:
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
-
-        results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
+        
+        results_dict["total_bytes_sent_to_each_client"][self.iteration + 1] = self.amt_bytes_sent_to_client
+        results_dict["total_bytes_sent_to_cloud"][self.iteration + 1] = self.amt_bytes_sent_to_cloud
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][

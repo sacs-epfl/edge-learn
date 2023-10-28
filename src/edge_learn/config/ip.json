@@ -1,8 +1,0 @@
-{
-  "0": {
-    "host": "localhost",
-    "cloud_port": 9000,
-    "edge_port": 9100,
-    "client_ports": [9200, 9210]
-  }
-}
