@@ -14,5 +14,9 @@
 *swp
 decentralizepy
 **/results/
-postprocess
+postprocess/data/*
+!postprocess/data/.gitkeep
+postprocess/output/*
+!postprocess/output/.gitkeep
 src/edge_learn/config/*
+!src/edge_learn/config/.gitkeep
