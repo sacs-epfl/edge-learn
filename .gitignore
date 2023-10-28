@@ -14,4 +14,5 @@
 *swp
 decentralizepy
 **/results/
-postprocess
+postprocess/data
+postprocess/output
