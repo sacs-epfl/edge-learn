@@ -1,0 +1,4 @@
+Current Implementation Peculirarities
+
+when launching docker will check if you have config/gpu.json, if so then all docker containers
+are launched with --gpus all, else nothing added
