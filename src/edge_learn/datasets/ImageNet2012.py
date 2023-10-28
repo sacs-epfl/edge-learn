@@ -18,6 +18,15 @@ from decentralizepy.datasets.Partitioner import DataPartitioner
 NUM_CLASSES = 1000
 
 
+"""
+Download the dataset from https://image-net.org/challenges/LSVRC/2012/2012-downloads.php
+You need to download Development Kit (Tasks 1 & 2), Training images (Tasks 1 & 2), 
+    and Validatio images (all tasks)
+Place all in the same directory, do not extract. 
+Launch ./docker_run.sh [DIRECTORY OF IMAGENET]. It will parse all the files for you.
+"""
+
+
 class ImageNet2012(Dataset):
     def __init__(
         self,
@@ -140,10 +149,17 @@ class ImageNet2012(Dataset):
         total_correct = 0
         total_predicted = 0
 
+        # Get the device of the model
+        device = next(model.parameters()).device
+
         with torch.no_grad():
             loss_val = 0.0
             count = 0
             for elems, labels in testloader:
+                # Move the data to the same device as the model
+                elems = elems.to(device)
+                labels = labels.to(device)
+
                 outputs = model(elems)
                 loss_val += loss(outputs, labels).item()
                 count += 1
@@ -151,24 +167,26 @@ class ImageNet2012(Dataset):
                 for label, prediction in zip(labels, predictions):
                     logging.debug("{} predicted as {}".format(label, prediction))
                     if label == prediction:
-                        correct_pred[label] += 1
+                        correct_pred[label.item()] += 1
                         total_correct += 1
-                    total_pred[label] += 1
+                    total_pred[label.item()] += 1
                     total_predicted += 1
 
-        logging.debug("Predicted on the test set")
+            logging.debug("Predicted on the test set")
 
-        for key, value in enumerate(correct_pred):
-            if total_pred[key] != 0:
-                accuracy = 100 * float(value) / total_pred[key]
-            else:
-                accuracy = 100.0
-            logging.debug("Accuracy for class {} is: {:.1f} %".format(key, accuracy))
+            for key, value in enumerate(correct_pred):
+                if total_pred[key] != 0:
+                    accuracy = 100 * float(value) / total_pred[key]
+                else:
+                    accuracy = 100.0
+                logging.debug(
+                    "Accuracy for class {} is: {:.1f} %".format(key, accuracy)
+                )
 
-        accuracy = 100 * float(total_correct) / total_predicted
-        loss_val = loss_val / count
-        logging.info("Overall accuracy is: {:.1f} %".format(accuracy))
-        return accuracy, loss_val
+            accuracy = 100 * float(total_correct) / total_predicted
+            loss_val = loss_val / count
+            logging.info("Overall accuracy is: {:.1f} %".format(accuracy))
+            return accuracy, loss_val
 
 
 class ResNet18(Model):

@@ -1,21 +1,19 @@
 #!/bin/bash
 
-calculate_port() {
-    local rank=$1
-    local offset=9001
-    echo $((2 * rank + offset))
-}
+machine_id=$(jq -r '.machine_id' config/params.json)
+cloud_machine_id=$(jq -r '.cloud_machine_id' config/params.json)
+cloud_port=$(jq -r ".\"$machine_id\".cloud_port" config/ip.json)
+edge_port=$(jq -r ".\"$machine_id\".edge_port" config/ip.json)
+client_ports=($(jq -r ".\"$machine_id\".client_ports[]" config/ip.json))
 
 create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
     echo "Running primary cloud"
-    docker run -d -p $(calculate_port -1):1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=8g --name primary_cloud edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config 
+    docker run --gpus all -d -p $cloud_port:1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=8g --name primary_cloud-$machine_id edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config
 }
 
 is_primary_cloud() {
-    local machine_id=$(jq -r '.machine_id' config/params.json)
-    local cloud_machine_id=$(jq -r '.cloud_machine_id' config/params.json)
     if [ $machine_id -eq $cloud_machine_id ]; then
         echo 0
     else
@@ -26,14 +24,14 @@ is_primary_cloud() {
 create_primary_cloud_if_needed() {
     if [ $(is_primary_cloud) -eq 0 ]; then
         create_primary_cloud $1 $2 $3 $4
-    fi 
+    fi
 }
 
 create_edge_server() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/edge_server
     echo "Running edge server"
-    docker run -d -p $(calculate_port 0):1000 -v $base_result_dir/edge_server:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --name edge_server edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
+    docker run --gpus all -d -p $edge_port:1000 -v $base_result_dir/edge_server:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --name edge_server-$machine_id edge_learn:latest python3 create_node.py --node_type edge --rank 0 --config_dir config
 }
 
 create_client() {
@@ -41,7 +39,7 @@ create_client() {
     local base_result_dir=$2
     mkdir -p $base_result_dir/client_$i
     echo "Running client $i"
-    docker run -d -p $(calculate_port $((i + 1))):1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --name client_$i edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
+    docker run --gpus all -d -p ${client_ports[$i]}:1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --name client_$i-$machine_id edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
 }
 
 create_clients() {
@@ -68,17 +66,17 @@ wait_for_exit() {
     echo "Waiting for container $container_name to exit..."
     docker wait $container_name
     echo "Container $container_name exited"
-    docker remove $container_name
+    docker rm $container_name
 }
 
 cleanup() {
     if [ $(is_primary_cloud) -eq 0 ]; then
-        wait_for_exit primary_cloud
+        wait_for_exit primary_cloud-$machine_id
     fi
-    wait_for_exit edge_server
+    wait_for_exit edge_server-$machine_id
     local clients_per_machine=$(jq -r '.clients_per_machine' config/params.json)
     for i in $(seq 0 $(($clients_per_machine - 1))); do
-        wait_for_exit client_$i
+        wait_for_exit client_$i-$machine_id
     done
 
     echo "All containers exited"
@@ -86,11 +84,11 @@ cleanup() {
 
 main() {
     launch_nodes $1
-    cleanup
+    cleanup 
 }
 
 main $1
-# First and only argument is pointing to where dataset exists
+# First and only argument is pointing to where dataset exists.
 
 
 
