@@ -230,8 +230,8 @@ class EdgeServer(Node):
         else:
             results_dict = {
                 "train_loss": {},
-                "total_bytes_sent_to_each_client": {},
-                "total_bytes_sent_to_cloud": {},
+                "bytes_sent_to_each_client": {},
+                "bytes_sent_to_cloud": {},
                 "total_meta": {},
                 "total_data_per_n": {},
             }
@@ -239,8 +239,8 @@ class EdgeServer(Node):
         if LearningMode(self.learning_mode) == LearningMode.HYBRID:
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
         
-        results_dict["total_bytes_sent_to_each_client"][self.iteration + 1] = self.amt_bytes_sent_to_client
-        results_dict["total_bytes_sent_to_cloud"][self.iteration + 1] = self.amt_bytes_sent_to_cloud
+        results_dict["bytes_sent_to_each_client"][self.iteration + 1] = self.amt_bytes_sent_to_client
+        results_dict["bytes_sent_to_cloud"][self.iteration + 1] = self.amt_bytes_sent_to_cloud
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][

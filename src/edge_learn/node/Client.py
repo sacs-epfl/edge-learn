@@ -90,7 +90,10 @@ class Client(Node):
                 torch.tensor([], dtype=self.last_dtype_target),
             )
         to_send["STATUS"] = "OK"
+
+        before = self.communication.total_bytes
         self.communication.send(self.parents[0], to_send)
+        self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
 
     def send_model_to_edge_server(self):
         to_send = self.sharing.serialized_model()
@@ -98,7 +101,10 @@ class Client(Node):
         to_send["iteration"] = self.iteration
         to_send["STATUS"] = "OK"
         to_send["degree"] = 1
+
+        before = self.communication.total_bytes
         self.communication.send(self.parents[0], to_send)
+        self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
 
     def train(self):
         data, target = None, None
@@ -122,14 +128,14 @@ class Client(Node):
                 results_dict = json.load(inf)
         else:
             results_dict = {
-                "total_bytes": {},
+                "bytes_sent_to_edge": {},
                 "total_meta": {},
                 "total_data_per_n": {},
                 "total_elapsed_time": {},
             }
 
         cur_time = perf_counter()
-        results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
+        results_dict["bytes_sent_to_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
         results_dict["total_elapsed_time"][self.iteration + 1] = (
             cur_time - self.start_time
         )

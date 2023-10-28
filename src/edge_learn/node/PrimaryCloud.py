@@ -74,8 +74,10 @@ class PrimaryCloud(Node):
         to_send["CHANNEL"] = "MODEL"
         to_send["STATUS"] = "OK"
 
+        before = self.communication.total_bytes
         for edge in self.children:
             self.communication.send(edge, to_send)
+        self.amt_bytes_sent_to_edge = (self.communication.total_bytes - before) // len(self.children)
 
     def get_model_from_edge_servers_and_store_in_peer_deque(self):
         while not self.receive_from_all(self.peer_deques):
@@ -186,7 +188,7 @@ class PrimaryCloud(Node):
                 "train_loss": {},
                 "test_loss": {},
                 "test_acc": {},
-                "total_bytes": {},
+                "bytes_sent_to_each_edge": {},
                 "total_meta": {},
                 "total_data_per_n": {},
             }
@@ -198,7 +200,7 @@ class PrimaryCloud(Node):
         if self.test_acc != None:
             results_dict["test_acc"][self.iteration] = self.test_acc
 
-        results_dict["total_bytes"][self.iteration + 1] = self.communication.total_bytes
+        results_dict["bytes_sent_to_each_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
