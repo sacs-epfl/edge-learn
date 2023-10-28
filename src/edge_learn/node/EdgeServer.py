@@ -98,7 +98,7 @@ class EdgeServer(Node):
 
         for client in self.children:
             self.communication.send(client, to_send)
-        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
+        self.amt_bytes_sent_to_client = self.communication.total_bytes
 
     def send_data_to_primary_cloud(self):
         to_send = dict()
