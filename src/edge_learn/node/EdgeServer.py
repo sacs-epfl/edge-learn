@@ -96,9 +96,10 @@ class EdgeServer(Node):
         to_send["CHANNEL"] = "MODEL"
         to_send["STATUS"] = "OK"
 
+        before = self.communication.total_bytes
         for client in self.children:
             self.communication.send(client, to_send)
-        self.amt_bytes_sent_to_client = self.communication.total_bytes
+        self.amt_bytes_sent_to_client = (self.communication.total_bytes - before) // len(self.children)
 
     def send_data_to_primary_cloud(self):
         to_send = dict()
@@ -107,8 +108,9 @@ class EdgeServer(Node):
         to_send["CHANNEL"] = "DATA"
         to_send["STATUS"] = "OK"
 
+        before = self.communication.total_bytes
         self.communication.send(self.parents[0], to_send)
-        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
+        self.amt_bytes_sent_to_cloud = self.communication.total_bytes - before
 
     def get_data_from_clients(self):
         self.batches_received = dict()
@@ -214,8 +216,9 @@ class EdgeServer(Node):
         to_send["CHANNEL"] = "MODEL"
         to_send["STATUS"] = "OK"
 
+        before = self.communication.total_bytes
         self.communication.send(self.parents[0], to_send)
-        self.amt_bytes_sent_to_cloud = self.communication.total_bytes
+        self.amt_bytes_sent_to_cloud = self.communication.total_bytes - before
 
     def collect_stats(self):
         if self.iteration != 0:
