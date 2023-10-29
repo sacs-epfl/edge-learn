@@ -283,6 +283,7 @@ class Client(Node):
             self.rank,
             self.machine_id,
             self.mapping,
+            LearningMode(self.learning_mode),
             train=True,
             test=False,
             **self.dataset_params
