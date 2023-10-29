@@ -3,7 +3,6 @@ import importlib
 import logging
 import json
 import os
-from time import perf_counter
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.node.Node import Node

@@ -5,6 +5,8 @@ from collections import deque
 import logging
 import importlib
 
+from time import perf_counter
+
 from decentralizepy.node.Node import Node
 from decentralizepy import utils
 
