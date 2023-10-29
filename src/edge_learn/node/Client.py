@@ -51,7 +51,6 @@ class Client(Node):
     def initialize_run(self):
         self.trainset = self.dataset.get_trainset(self.batch_size_to_send, True)
         self.dataiter = iter(self.trainset)
-        self.start_time = perf_counter()
 
     def get_model_from_edge_server(self):
         sender, data = self.receive_channel("MODEL")
@@ -134,12 +133,7 @@ class Client(Node):
                 "total_elapsed_time": {},
             }
 
-        cur_time = perf_counter()
         results_dict["bytes_sent_to_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
-        results_dict["total_elapsed_time"][self.iteration + 1] = (
-            cur_time - self.start_time
-        )
-        self.start_time = cur_time
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][

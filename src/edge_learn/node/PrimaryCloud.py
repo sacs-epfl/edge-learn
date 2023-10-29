@@ -24,8 +24,8 @@ class PrimaryCloud(Node):
     def runHybrid(self):
         self.initialise_run()
         for iteration in range(self.iterations):
-            self.initialize_iteration(iteration)
             self.test()
+            self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
             self.get_model_from_edge_servers_and_store_in_peer_deque()
             self.average_model_from_peer_deques()
@@ -35,8 +35,8 @@ class PrimaryCloud(Node):
     def runOnlyData(self):
         self.initialise_run()
         for iteration in range(self.iterations):
-            self.initialize_iteration(iteration)
             self.test()
+            self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
             self.get_data_from_edge_servers()
             self.create_batch_and_cache()
@@ -51,8 +51,8 @@ class PrimaryCloud(Node):
     def runBaseline(self):
         self.initialise_run()
         for iteration in range(self.iterations):
-            self.initialize_iteration(iteration)
             self.test()
+            self.initialize_iteration(iteration)
             self.get_batch_from_dataset()
             self.train()
             self.amt_bytes_sent_to_edge = 0
@@ -68,6 +68,7 @@ class PrimaryCloud(Node):
     def initialize_iteration(self, iteration: int):
         self.iteration = iteration
         self.peer_deques = dict()
+        self.start_time = perf_counter()
 
     def test(self):
         self.rounds_to_test -= 1
@@ -202,6 +203,8 @@ class PrimaryCloud(Node):
         )
 
     def collect_stats(self):
+        cur_time = perf_counter()
+
         if self.iteration != 0:
             with open(
                 os.path.join(self.log_dir, "{}_results.json".format(self.rank)),
@@ -226,6 +229,7 @@ class PrimaryCloud(Node):
             results_dict["test_acc"][self.iteration] = self.test_acc
 
         results_dict["bytes_sent_to_each_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
+        results_dict["total_elapsed_time"][self.iteration + 1] = cur_time - self.start_time
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
