@@ -1,5 +1,5 @@
 from decentralizepy.mappings.Mapping import Mapping
-
+import logging
 
 class EdgeMapping(Mapping):
     """
@@ -57,7 +57,7 @@ class EdgeMapping(Mapping):
     def get_duid_from_machine_and_rank(self, machine, rank):
         uid = self.get_uid(rank, machine)
         duid = self.get_duid_from_uid(uid)
-        assert duid < 0
+        assert duid >= 0
         return duid
 
     def get_uid(self, rank: int, machine_id: int):
