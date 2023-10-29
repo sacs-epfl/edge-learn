@@ -20,9 +20,7 @@ from edge_learn.enums.LearningMode import LearningMode
 
 NUM_CLASSES = 10
 
-
 class CIFAR10(Dataset):
-
     def load_trainset(self):
         logging.info("Loading training set.")
         trainset = torchvision.datasets.CIFAR10(

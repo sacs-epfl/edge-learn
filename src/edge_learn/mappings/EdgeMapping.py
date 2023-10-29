@@ -55,7 +55,7 @@ class EdgeMapping(Mapping):
         return self.num_clients
 
     def get_duid_from_machine_and_rank(self, machine, rank):
-        uid = self.get_uid(machine, rank)
+        uid = self.get_uid(rank, machine)
         duid = self.get_duid_from_uid(uid)
         assert duid < 0
         return duid
