@@ -41,9 +41,10 @@ def create_node(node_type, rank, config_dir):
             params["test_frequency"],
             params["train_batch_size"],
             params["learning_mode"],
+            params["num_threads_cloud"],
         )
     elif node_type == "edge":
-        EdgeServer(
+        EdgeServer.create(
             rank,
             params["machine_id"],
             mapping,
@@ -53,9 +54,10 @@ def create_node(node_type, rank, config_dir):
             cur_log_level,
             params["train_batch_size"],
             params["learning_mode"],
+            params["num_threads_edge"],
         )
     elif node_type == "client":
-        Client(
+        Client.create(
             rank,
             params["machine_id"],
             mapping,
@@ -64,6 +66,7 @@ def create_node(node_type, rank, config_dir):
             cur_log_level,
             params["batch_size_to_send_to_edge"],
             params["learning_mode"],
+            params["num_threads_cloud"],
         )
     else:
         print(f"Invalid node type: {node_type}")

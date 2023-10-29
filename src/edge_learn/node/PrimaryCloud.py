@@ -47,9 +47,23 @@ class PrimaryCloud(Node):
 
     def runOnlyWeights(self):
         self.runHybrid()
+    
+    def runBaseline(self):
+        self.initialise_run()
+        for iteration in range(self.iterations):
+            self.initialize_iteration(iteration)
+            self.test()
+            self.get_batch_from_dataset()
+            self.train()
+            self.amt_bytes_sent_to_edge = 0
+            self.collect_stats()
+        self.finalize_run()
 
     def initialise_run(self):
         self.rounds_to_test = self.test_after
+        if LearningMode(self.learning_mode) == LearningMode.BASELINE:
+            self.trainset = self.dataset.get_trainset(self.train_batch_size, True)
+            self.dataiter = iter(self.trainset)
 
     def initialize_iteration(self, iteration: int):
         self.iteration = iteration
@@ -66,6 +80,17 @@ class PrimaryCloud(Node):
             ta, tl = self.dataset.test(self.model, self.loss)
             self.test_acc = ta
             self.test_loss = tl
+    
+    def get_batch_from_dataset(self):
+        data, target = None, None
+        try:
+            data, target = next(self.dataiter)
+        except StopIteration:
+            self.dataiter = iter(self.trainset)
+            data, target = next(self.dataiter)
+        self.batch = dict()
+        self.batch["data"] = data
+        self.batch["target"] = target
 
     def send_model_to_edge_servers(self):
         to_send = dict()
@@ -262,7 +287,7 @@ class PrimaryCloud(Node):
                 "Test Loss",
                 os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
             )
-
+    
     def __init__(
         self,
         rank: int,
@@ -276,8 +301,10 @@ class PrimaryCloud(Node):
         test_after=5,
         train_batch_size=32,
         learning_mode="H",
+        num_threads=1,
         *args
     ):
+        
         self.instantiate(
             rank,
             machine_id,
@@ -290,17 +317,20 @@ class PrimaryCloud(Node):
             test_after,
             train_batch_size,
             learning_mode,
+            num_threads,
             *args
         )
 
-        if self.learning_mode == "H":
+        if LearningMode(self.learning_mode) == LearningMode.HYBRID:
             self.runHybrid()
-        elif self.learning_mode == "OD":
+        elif LearningMode(self.learning_mode) == LearningMode.ONLY_DATA:
             self.runOnlyData()
-        elif self.learning_mode == "OW":
+        elif LearningMode(self.learning_mode) == LearningMode.ONLY_WEIGHTS:
             self.runOnlyWeights()
+        elif LearningMode(self.learning_mode) == LearningMode.BASELINE:
+            self.runBaseline()
         else:
-            raise ValueError("Learning mode must be one of H, OD, OW")
+            raise ValueError("Learning mode must be one of H, OD, OW, B")
         logging.info("Primary cloud finished running")
 
     def instantiate(
@@ -316,6 +346,7 @@ class PrimaryCloud(Node):
         test_after: int,
         train_batch_size: int,
         learning_mode: str,
+        num_threads: int,
     ):
         logging.info("Started process.")
 
@@ -330,6 +361,7 @@ class PrimaryCloud(Node):
             test_after,
             train_batch_size,
             learning_mode,
+            num_threads,
         )
 
         self.peer_deques = dict()
@@ -345,7 +377,8 @@ class PrimaryCloud(Node):
         self.my_neighbors = set()
         self.my_neighbors.update(self.parents)
         self.my_neighbors.update(self.children)
-        self.connect_neighbors()
+        if LearningMode(self.learning_mode) != LearningMode.BASELINE:
+            self.connect_neighbors()
 
         self.init_sharing(config["SHARING"])
 
@@ -364,6 +397,7 @@ class PrimaryCloud(Node):
         test_after: int,
         train_batch_size: int,
         learning_mode: str,
+        num_threads: int,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -379,6 +413,7 @@ class PrimaryCloud(Node):
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
+        self.num_threads = num_threads
 
     def init_dataset_model(self, dataset_configs):
         dataset_module = importlib.import_module(dataset_configs["dataset_package"])
@@ -391,11 +426,13 @@ class PrimaryCloud(Node):
             dataset_configs,
             ["dataset_package", "dataset_class", "model_class", "random_seed"],
         )
+        train_val = LearningMode(self.learning_mode) == LearningMode.BASELINE
         self.dataset = self.dataset_class(
             self.rank,
             self.machine_id,
             self.mapping,
-            train=False,
+            LearningMode(self.learning_mode),
+            train=train_val,
             test=True,
             **self.dataset_params
         )
@@ -413,12 +450,5 @@ class PrimaryCloud(Node):
         )
 
     def set_threads(self):
-        if self.learning_mode == LearningMode.ONLY_DATA:
-            total_threads = os.cpu_count()
-            max_threads = max(
-                total_threads - self.mapping.get_procs_per_machine() - 1, 1
-            )
-            torch.set_num_threads(max_threads)
-        else:
-            torch.set_num_threads(1)
+        torch.set_num_threads(self.num_threads)
         torch.set_num_interop_threads(1)

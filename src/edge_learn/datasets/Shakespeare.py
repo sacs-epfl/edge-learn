@@ -15,6 +15,7 @@ from decentralizepy.datasets.Partitioner import DataPartitioner
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.models.Model import Model
 from edge_learn.mappings.EdgeMapping import EdgeMapping
+from edge_learn.enums.LearningMode import LearningMode
 
 VOCAB = list(
     "dhlptx@DHLPTX $(,048cgkoswCGKOSW[_#'/37;?bfjnrvzBFJNRVZ\"&*.26:\naeimquyAEIMQUY]!%)-159\r{{}}<>"
@@ -153,6 +154,7 @@ class Shakespeare(Dataset):
         rank: int,
         machine_id: int,
         mapping: EdgeMapping,
+        learning_mode: LearningMode,
         train=True,
         test=True,
         random_seed: int = 1234,

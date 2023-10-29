@@ -287,6 +287,24 @@ class EdgeServer(Node):
                     os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
                 )
 
+    @classmethod
+    def create(
+        cls,
+        rank: int,
+        machine_id: int,
+        mapping: EdgeMapping,
+        config: dict,
+        log_dir=".",
+        weights_store_dir=".",
+        log_level=logging.INFO,
+        train_batch_size=32,
+        learning_mode="H",
+        num_threads=1,
+    ):
+        if LearningMode(learning_mode) == LearningMode.BASELINE:
+            return None
+        return cls(rank, machine_id, mapping, config, log_dir, weights_store_dir, log_level, train_batch_size, learning_mode, num_threads)
+
     def __init__(
         self,
         rank: int,
@@ -298,6 +316,7 @@ class EdgeServer(Node):
         log_level=logging.INFO,
         train_batch_size=32,
         learning_mode="H",
+        num_threads=1,
     ):
         self.instantiate(
             rank,
@@ -309,6 +328,7 @@ class EdgeServer(Node):
             log_level,
             train_batch_size,
             learning_mode,
+            num_threads,
         )
 
         if self.learning_mode == "H":
@@ -332,6 +352,7 @@ class EdgeServer(Node):
         log_level: int,
         train_batch_size: int,
         learning_mode: str,
+        num_threads: int,
     ):
         logging.info("Started process")
 
@@ -344,6 +365,7 @@ class EdgeServer(Node):
             weights_store_dir,
             train_batch_size,
             learning_mode,
+            num_threads,
         )
 
         self.batches_received = dict()
@@ -379,6 +401,7 @@ class EdgeServer(Node):
         weights_store_dir: str,
         train_batch_size: int,
         learning_mode: str,
+        num_threads: int,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -392,6 +415,7 @@ class EdgeServer(Node):
         self.sent_disconnections = False
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
+        self.num_threads = num_threads
 
     def init_model(self, dataset_configs):
         dataset_module = importlib.import_module(dataset_configs["dataset_package"])
@@ -408,12 +432,5 @@ class EdgeServer(Node):
         )
 
     def set_threads(self):
-        if self.learning_mode == LearningMode.HYBRID:
-            total_threads = os.cpu_count()
-            max_threads = max(
-                total_threads - self.mapping.get_procs_per_machine() - 1, 1
-            )
-            torch.set_num_threads(max_threads)
-        else:
-            torch.set_num_threads(1)
+        torch.set_num_threads(self.num_threads)
         torch.set_num_interop_threads(1)

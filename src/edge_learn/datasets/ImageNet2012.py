@@ -14,6 +14,7 @@ from decentralizepy.datasets.Dataset import Dataset
 from decentralizepy.models.Model import Model
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.datasets.Partitioner import DataPartitioner
+from edge_learn.enums.LearningMode import LearningMode
 
 NUM_CLASSES = 1000
 
@@ -33,6 +34,7 @@ class ImageNet2012(Dataset):
         rank: int,
         machine_id: int,
         mapping: EdgeMapping,
+        learning_mode: LearningMode,
         train=True,
         test=True,
         random_seed: int = 1234,

@@ -158,6 +158,23 @@ class Client(Node):
     def finalize_run(self):
         logging.info("Server disconnected. Process complete!")
 
+    @classmethod
+    def create(
+        cls,
+        rank: int,
+        machine_id: int,
+        mapping: EdgeMapping,
+        config: dict,
+        log_dir: str = ".",
+        log_level: logging = logging.INFO,
+        batch_size_to_send: int = 64,
+        learning_mode: str = "H",
+        num_threads: int = 1,
+    ):
+        if LearningMode(learning_mode) == LearningMode.BASELINE:
+            return None
+        return cls(rank, machine_id, mapping, config, log_dir, log_level, batch_size_to_send, learning_mode, num_threads)
+
     def __init__(
         self,
         rank: int,
@@ -168,6 +185,7 @@ class Client(Node):
         log_level: logging = logging.INFO,
         batch_size_to_send: int = 64,
         learning_mode: str = "H",
+        num_threads: int = 1,
     ):
         self.instantiate(
             rank,
@@ -178,6 +196,7 @@ class Client(Node):
             log_level,
             batch_size_to_send,
             learning_mode,
+            num_threads,
         )
 
         if self.learning_mode == "H":
@@ -199,6 +218,7 @@ class Client(Node):
         log_level: logging,
         batch_size_to_send: int,
         learning_mode: str,
+        num_threads: int,
     ):
         logging.info("Started process")
 
@@ -211,6 +231,7 @@ class Client(Node):
             log_dir,
             batch_size_to_send,
             learning_mode,
+            num_threads,
         )
         self.last_dtype_data = torch.int64
         self.last_dtype_target = torch.int64
@@ -241,6 +262,7 @@ class Client(Node):
         log_dir: str,
         batch_size_to_send: int,
         learning_mode: str,
+        num_threads: int,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -252,6 +274,7 @@ class Client(Node):
         self.log_dir = log_dir
         self.batch_size_to_send = batch_size_to_send
         self.learning_mode = learning_mode
+        self.num_threads = num_threads
 
     def init_dataset_model(self, dataset_configs):
         dataset_module = importlib.import_module(dataset_configs["dataset_package"])

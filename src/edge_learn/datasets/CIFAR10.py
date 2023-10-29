@@ -16,77 +16,34 @@ from decentralizepy.datasets.Partitioner import (
 )
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.models.Model import Model
+from edge_learn.enums.LearningMode import LearningMode
 
 NUM_CLASSES = 10
 
 
 class CIFAR10(Dataset):
-    """
-    Class for the FEMNIST dataset
-
-    """
 
     def load_trainset(self):
-        """
-        Loads the training set. Partitions it if needed.
-
-        """
         logging.info("Loading training set.")
         trainset = torchvision.datasets.CIFAR10(
             root=self.train_dir, train=True, download=True, transform=self.transform
         )
+        if self.learning_mode == LearningMode.BASELINE:
+            self.trainset = trainset 
+            return
+        
         c_len = len(trainset)
+        num_clients = self.mapping.get_num_clients()
 
-        if self.sizes == None:  # Equal distribution of data among processes
-            e = c_len // self.num_partitions
-            frac = e / c_len
-            self.sizes = [frac] * self.num_partitions
-            self.sizes[-1] += 1.0 - frac * self.num_partitions
-            logging.debug("Size fractions: {}".format(self.sizes))
+        e = c_len // num_clients
+        client_duid = self.mapping.get_duid_from_machine_and_rank(self.machine_id, self.rank)
 
-        if not self.partition_niid or self.partition_niid == "iid":
-            # IID partitioning
-            self.trainset = DataPartitioner(
-                trainset, sizes=self.sizes, seed=self.random_seed
-            ).use(self.dataset_id)
-        elif self.partition_niid == "simple":
-            self.trainset = SimpleDataPartitioner(
-                trainset, sizes=self.sizes, seed=self.random_seed
-            ).use(self.dataset_id)
-        elif self.partition_niid == "dirichlet":
-            self.trainset = DirichletDataPartitioner(
-                trainset,
-                sizes=self.sizes,
-                seed=self.random_seed,
-                alpha=self.alpha,
-                num_classes=self.num_classes,
-            ).use(self.dataset_id)
-        elif (
-            self.partition_niid == "kshard" or str(self.partition_niid) == "True"
-        ):  # Backward compatibility
-            if str(self.partition_niid) == "True":
-                logging.warn(
-                    "Using True as partition_niid is deprecated. Use kshard instead. Will be removed in future versions."
-                )
-            train_data = {key: [] for key in range(self.num_classes)}
-            for x, y in trainset:
-                train_data[y].append(x)
-            all_trainset = []
-            for y, x in train_data.items():
-                all_trainset.extend([(a, y) for a in x])
-            self.trainset = KShardDataPartitioner(
-                all_trainset, self.sizes, shards=self.shards, seed=self.random_seed
-            ).use(self.dataset_id)
-        else:
-            raise NotImplementedError(
-                "Partitioning method {} not implemented".format(self.partition_niid)
-            )
+        start_idx = e * client_duid
+        end_idx = start_idx + e
+
+        self.trainset = [trainset[i] for i in range(start_idx, end_idx)]
 
     def load_testset(self):
-        """
-        Loads the testing set.
-
-        """
         logging.info("Loading testing set.")
 
         self.testset = torchvision.datasets.CIFAR10(
@@ -98,72 +55,36 @@ class CIFAR10(Dataset):
         rank: int,
         machine_id: int,
         mapping: Mapping,
-        train=True,
-        test=True,
+        learning_mode: LearningMode,
+        train: bool,
+        test: bool,
         random_seed: int = 1234,
-        only_local=False,
-        train_dir="",
-        test_dir="",
-        sizes="",
-        test_batch_size=1024,
-        partition_niid="simple",
-        alpha=100,
-        shards=1,
+        train_dir: str = "",
+        test_dir: str = "",
+        test_batch_size: int =1024,
     ):
-        """
-        Constructor which reads the data files, instantiates and partitions the dataset
-
-        Parameters
-        ----------
-        rank : int
-            Rank of the current process (to get the partition).
-        machine_id : int
-            Machine ID
-        mapping : decentralizepy.mappings.Mapping
-            Mapping to convert rank, machine_id -> uid for data partitioning
-            It also provides the total number of global processes
-        random_seed : int, optional
-            Random seed for the dataset
-        only_local : bool, optional
-            True if the dataset needs to be partioned only among local procs, False otherwise
-        train_dir : str, optional
-            Path to the training data files. Required to instantiate the training set
-            The training set is partitioned according to the number of global processes and sizes
-        test_dir : str. optional
-            Path to the testing data files Required to instantiate the testing set
-        sizes : list(int), optional
-            A list of fractions specifying how much data to alot each process. Sum of fractions should be 1.0
-            By default, each process gets an equal amount.
-        test_batch_size : int, optional
-            Batch size during testing. Default value is 64
-        partition_niid: string, optional
-            One of 'simple', 'kshard', 'dirichlet'
-        alpha: float, optional
-            Parameter for Dirichlet Partitioner
-        shards: int, optional
-            Number of shards for KShard Partitioner
-
-        """
         super().__init__(
             rank,
             machine_id,
             mapping,
             random_seed,
-            only_local,
+            False,
             train_dir,
             test_dir,
-            sizes,
+            "",
             test_batch_size,
         )
 
         self.__training__ = train
         self.__testing__ = test
 
+        self.rank = rank
+        self.machine_id = machine_id
+        self.mapping = mapping
+        self.learning_mode = learning_mode
+
         self.num_classes = NUM_CLASSES
 
-        self.partition_niid = partition_niid
-        self.alpha = alpha
-        self.shards = shards
         self.transform = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -177,65 +98,18 @@ class CIFAR10(Dataset):
         if self.__testing__:
             self.load_testset()
 
-        # TODO: Add Validation
 
     def get_trainset(self, batch_size=1, shuffle=False):
-        """
-        Function to get the training set
-
-        Parameters
-        ----------
-        batch_size : int, optional
-            Batch size for learning
-
-        Returns
-        -------
-        torch.utils.Dataset(decentralizepy.datasets.Data)
-
-        Raises
-        ------
-        RuntimeError
-            If the training set was not initialized
-
-        """
         if self.__training__:
             return DataLoader(self.trainset, batch_size=batch_size, shuffle=shuffle)
         raise RuntimeError("Training set not initialized!")
 
     def get_testset(self):
-        """
-        Function to get the test set
-
-        Returns
-        -------
-        torch.utils.Dataset(decentralizepy.datasets.Data)
-
-        Raises
-        ------
-        RuntimeError
-            If the test set was not initialized
-
-        """
         if self.__testing__:
             return DataLoader(self.testset, batch_size=self.test_batch_size)
         raise RuntimeError("Test set not initialized!")
 
     def test(self, model, loss):
-        """
-        Function to evaluate model on the test dataset.
-
-        Parameters
-        ----------
-        model : decentralizepy.models.Model
-            Model to evaluate
-        loss : torch.nn.loss
-            Loss function to use
-
-        Returns
-        -------
-        tuple(float, float)
-
-        """
         model.eval()
         testloader = self.get_testset()
 
@@ -279,10 +153,6 @@ class CIFAR10(Dataset):
 
 
 class CNN(Model):
-    """
-    Class for a CNN Model for CIFAR10
-
-    """
 
     def __init__(self):
         """
@@ -325,9 +195,7 @@ class CNN(Model):
 
 class LeNet(Model):
     """
-    Class for a LeNet Model for CIFAR10
     Inspired by original LeNet network for MNIST: https://ieeexplore.ieee.org/abstract/document/726791
-
     """
 
     def __init__(self):

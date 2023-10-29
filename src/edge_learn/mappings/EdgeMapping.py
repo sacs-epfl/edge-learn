@@ -28,12 +28,12 @@ class EdgeMapping(Mapping):
 
         """
 
-        self.n_procs = (
-            n_machines * procs_per_machine + n_machines + 1
-        )  # primary cloud + edge servers + clients
-        super().__init__(self.n_procs)
+        
+        super().__init__(n_machines * procs_per_machine + n_machines + 1)
         self.n_machines = n_machines
         self.edge_servers = n_machines
+        self.num_clients = n_machines * procs_per_machine
+        self.n_procs = self.num_clients + self.edge_servers + 1 # the singular cloud
         self.procs_per_machine = procs_per_machine
         self.local_clients = procs_per_machine
         self.global_service_machine = global_service_machine
@@ -50,6 +50,15 @@ class EdgeMapping(Mapping):
 
         """
         return self.procs_per_machine
+    
+    def get_num_clients(self):
+        return self.num_clients
+
+    def get_duid_from_machine_and_rank(self, machine, rank):
+        uid = self.get_uid(machine, rank)
+        duid = self.get_duid_from_uid(uid)
+        assert duid < 0
+        return duid
 
     def get_uid(self, rank: int, machine_id: int):
         """
