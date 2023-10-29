@@ -129,7 +129,6 @@ class Client(Node):
                 "bytes_sent_to_edge": {},
                 "total_meta": {},
                 "total_data_per_n": {},
-                "total_elapsed_time": {},
             }
 
         results_dict["bytes_sent_to_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge

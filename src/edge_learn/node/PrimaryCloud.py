@@ -219,6 +219,7 @@ class PrimaryCloud(Node):
                 "test_loss": {},
                 "test_acc": {},
                 "bytes_sent_to_each_edge": {},
+                "total_elapsed_time": {},
                 "total_meta": {},
                 "total_data_per_n": {},
             }
