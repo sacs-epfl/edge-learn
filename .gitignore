@@ -15,6 +15,7 @@
 decentralizepy
 **/results/
 postprocess/data/*
+!postprocess/data/example/
 !postprocess/data/.gitkeep
 postprocess/output/*
 !postprocess/output/.gitkeep
