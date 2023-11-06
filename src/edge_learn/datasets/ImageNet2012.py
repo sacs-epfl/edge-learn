@@ -16,8 +16,9 @@ from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.datasets.Partitioner import DataPartitioner
 from edge_learn.enums.LearningMode import LearningMode
 
-NUM_CLASSES = 1000
-
+NUM_CLASSES = 100
+# MAX is 50
+TEST_IMAGES_PER_CATEGORY = 50
 
 """
 Download the dataset from https://image-net.org/challenges/LSVRC/2012/2012-downloads.php
@@ -85,13 +86,22 @@ class ImageNet2012(Dataset):
             root=self.train_dir, split="train", transform=self.transform
         )
         logging.info("Full trainset loaded.")
+
+        # Filter the dataset to include only the first `NUM_CLASSES` classes
+        indices = [
+            idx
+            for idx, (_, target) in enumerate(trainset.samples)
+            if target < NUM_CLASSES
+        ]
+        trainset = torch.utils.data.Subset(trainset, indices)
+
         c_len = len(trainset)
 
         if self.sizes == None:
             e = c_len // self.num_partitions
             frac = e / c_len
             self.sizes = [frac] * self.num_partitions
-            self.sizes[-1] += 1.0 - frac * self.num_partitions
+            self.sizes[-1] += 1.0 - sum(self.sizes)
             logging.debug("Size fractions: {}".format(self.sizes))
 
         self.trainset = DataPartitioner(
@@ -108,15 +118,16 @@ class ImageNet2012(Dataset):
         # Group image indices by category
         category_indices = {}
         for idx, (_, label) in enumerate(full_testset.imgs):
-            if label not in category_indices:
-                category_indices[label] = []
-            category_indices[label].append(idx)
+            if label < NUM_CLASSES:
+                if label not in category_indices:
+                    category_indices[label] = []
+                category_indices[label].append(idx)
         logging.info("Grouped image indices by category.")
 
-        # Select one image from each category
+        # Select up to TEST_IMAGES_PER_CATEGORY images from each of the first NUM_CLASSES categories
         selected_indices = []
-        for label, indices in category_indices.items():
-            selected_indices.extend(indices[:1])
+        for indices in category_indices.values():
+            selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
 
         # Apply transformations to selected images
         transformed_images = [
@@ -216,9 +227,9 @@ class ResNet18(Model):
             # Step 4: Restore the original conv1 layer back to the model
             self.resnet18.conv1 = original_conv1
 
-            # Modify the last fully connected layer for 1000 classes of ImageNet
+            # Modify the last fully connected layer for NUM_CLASSES of ImageNet
             fc_in_features = self.resnet18.fc.in_features
-            self.resnet18.fc = torch.nn.Linear(fc_in_features, 1000)
+            self.resnet18.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
 
     def forward(self, x):
         return self.resnet18(x)
