@@ -49,7 +49,7 @@ class PrimaryCloud(Node):
 
     def runOnlyWeights(self):
         self.runHybrid()
-    
+
     def runBaseline(self):
         self.initialise_run()
         for iteration in range(self.iterations):
@@ -83,7 +83,7 @@ class PrimaryCloud(Node):
             ta, tl = self.dataset.test(self.model, self.loss)
             self.test_acc = ta
             self.test_loss = tl
-    
+
     def get_batch_from_dataset(self):
         data, target = None, None
         try:
@@ -105,7 +105,9 @@ class PrimaryCloud(Node):
         before = self.communication.total_bytes
         for edge in self.children:
             self.communication.send(edge, to_send)
-        self.amt_bytes_sent_to_edge = (self.communication.total_bytes - before) // len(self.children)
+        self.amt_bytes_sent_to_edge = (self.communication.total_bytes - before) // len(
+            self.children
+        )
 
     def get_model_from_edge_servers_and_store_in_peer_deque(self):
         while not self.receive_from_all(self.peer_deques):
@@ -224,15 +226,22 @@ class PrimaryCloud(Node):
                 "total_data_per_n": {},
             }
 
-        if LearningMode(self.learning_mode) == LearningMode.ONLY_DATA:
+        if (
+            LearningMode(self.learning_mode) == LearningMode.ONLY_DATA
+            or LearningMode(self.learning_mode) == LearningMode.BASELINE
+        ):
             results_dict["train_loss"][self.iteration + 1] = self.loss_amt
         if self.test_loss != None:
             results_dict["test_loss"][self.iteration] = self.test_loss
         if self.test_acc != None:
             results_dict["test_acc"][self.iteration] = self.test_acc
 
-        results_dict["bytes_sent_to_each_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
-        results_dict["total_elapsed_time"][self.iteration + 1] = cur_time - self.start_time
+        results_dict["bytes_sent_to_each_edge"][
+            self.iteration + 1
+        ] = self.amt_bytes_sent_to_edge
+        results_dict["total_elapsed_time"][self.iteration + 1] = (
+            cur_time - self.start_time
+        )
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
@@ -294,7 +303,7 @@ class PrimaryCloud(Node):
                 "Test Loss",
                 os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
             )
-    
+
     def __init__(
         self,
         rank: int,
@@ -311,7 +320,6 @@ class PrimaryCloud(Node):
         num_threads=1,
         *args
     ):
-        
         self.instantiate(
             rank,
             machine_id,
