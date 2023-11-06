@@ -47,7 +47,6 @@ class Training:
         logging.debug("Using gpus: " + ", ".join(map(str, self.gpus_to_use)))
 
         self.model = DataParallel(self.model, device_ids=self.gpus_to_use)
-        self.model.to(f"cuda:{self.gpus_to_use[0]}")
 
     # Assuming self.model is already wrapped with DataParallel
     def trainstep(self, data, target):
