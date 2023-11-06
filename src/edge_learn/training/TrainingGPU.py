@@ -49,27 +49,29 @@ class Training:
         self.model = DataParallel(self.model, device_ids=self.gpus_to_use)
         self.model.to(f"cuda:{self.gpus_to_use[0]}")
 
+    # Assuming self.model is already wrapped with DataParallel
+    def trainstep(self, data, target):
+        self.optimizer.zero_grad()
+        output = self.model(data)  # data can be on CPU
+        loss_val = self.loss(
+            output, target.to(output.device)
+        )  # Move target to the same device as output
+        loss_val.backward()
+        self.optimizer.step()
+        return loss_val.item()
+
     def eval_loss(self, dataset):
         trainset = dataset.get_trainset(self.batch_size, self.shuffle)
         epoch_loss = 0.0
         count = 0
         with torch.no_grad():
             for data, target in trainset:
-                # Move data and target to the primary GPU
-                data = data.to(f"cuda:{self.gpus_to_use[0]}")
-                target = target.to(f"cuda:{self.gpus_to_use[0]}")
-
-                # Forward pass (DataParallel will handle the multi-GPU)
-                output = self.model(data)
-
-                # Calculate the loss
-                loss_val = self.loss(output, target)
-
-                # Accumulate the loss and count
+                output = self.model(data)  # data can be on CPU
+                loss_val = self.loss(
+                    output, target.to(output.device)
+                )  # Move target to the same device as output
                 epoch_loss += loss_val.item()
                 count += len(data)
-
-        # Compute the average loss
         loss = epoch_loss / count
         logging.info("Loss after iteration: {}".format(loss))
         return loss
@@ -87,27 +89,6 @@ class Training:
     #     loss = epoch_loss / count
     #     logging.info("Loss after iteration: {}".format(loss))
     #     return loss
-
-    def trainstep(self, data, target):
-        data = data.to(f"cuda:{self.gpus_to_use[0]}")
-        target = target.to(f"cuda:{self.gpus_to_use[0]}")
-
-        # Reset gradients
-        self.optimizer.zero_grad()
-
-        # Forward pass (DataParallel will split the data across GPUs)
-        output = self.model(data)
-
-        # Calculate the loss
-        loss_val = self.loss(output, target)
-
-        # Backward pass (gradients are gathered across all GPUs)
-        loss_val.backward()
-
-        # Update the parameters
-        self.optimizer.step()
-
-        return loss_val.item()
 
     # One training step on minibatch
     # def trainstep(self, data, target):
