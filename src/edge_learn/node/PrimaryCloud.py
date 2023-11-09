@@ -468,6 +468,29 @@ class PrimaryCloud(Node):
             self.rank, self.machine_id, self.mapping, 1, **comm_params
         )
 
+    def init_optimizer(self, optimizer_configs):
+        optimizer_module = importlib.import_module(
+            optimizer_configs["optimizer_package"]
+        )
+
+        self.optimizer_class = getattr(
+            optimizer_module, optimizer_configs["optimizer_class"]
+        )
+
+        # Prepare optimizer parameters, converting strings to tuples if necessary
+        self.optimizer_params = {}
+        for key, value in optimizer_configs.items():
+            if key not in ["optimizer_package", "optimizer_class"]:
+                # Here we handle the conversion of the 'betas' string to a tuple
+                if key == "betas":
+                    value = literal_eval(value)
+                self.optimizer_params[key] = value
+
+        # Instantiate the optimizer with the prepared parameters
+        self.optimizer = self.optimizer_class(
+            self.model.parameters(), **self.optimizer_params
+        )
+
     def init_lr_scheduler(self, scheduler_configs):
         scheduler_module = importlib.import_module(
             scheduler_configs["scheduler_package"]

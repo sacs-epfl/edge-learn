@@ -223,3 +223,18 @@ class ResNet50(Model):
 
     def forward(self, x):
         return self.resnet50(x)
+
+
+class EfficientNetB0(Model):
+    def __init__(self):
+        super(EfficientNetB0, self).__init__()
+
+        self.efficientnet_b0 = models.efficientnet_b0(pretrained=True)
+
+        num_ftrs = self.efficientnet_b0.classifier[1].in_features
+        self.efficientnet_b0.classifier = nn.Sequential(
+            nn.Dropout(p=0.2, inplace=True), nn.Linear(num_ftrs, NUM_CLASSES)
+        )
+
+    def forward(self, x):
+        return self.efficientnet_b0(x)
