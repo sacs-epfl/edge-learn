@@ -208,6 +208,7 @@ class ImageNet2012(Dataset):
             accuracy = 100 * float(total_correct) / total_predicted
             loss_val = loss_val / count
             logging.info("Overall accuracy is: {:.1f} %".format(accuracy))
+            model.train()
             return accuracy, loss_val
 
 
