@@ -111,8 +111,21 @@ class ImageNet2012(Dataset):
     def load_testset(self):
         logging.info("Starting to load the testset...")
 
+        test_transform = transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
         # Load dataset without transformations to quickly get labels=
-        full_testset = torchvision.datasets.ImageNet(root=self.test_dir, split="val")
+        full_testset = torchvision.datasets.ImageNet(
+            root=self.test_dir, split="val", transform=test_transform
+        )
         logging.info("Full testset loaded.")
 
         # Group image indices by category
@@ -129,14 +142,7 @@ class ImageNet2012(Dataset):
         for indices in category_indices.values():
             selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
 
-        # Apply transformations to selected images
-        transformed_images = [
-            self.transform(full_testset[i][0]) for i in selected_indices
-        ]
-        transformed_labels = [full_testset[i][1] for i in selected_indices]
-
-        # Combine the transformed images and labels to create a custom dataset
-        self.testset = list(zip(transformed_images, transformed_labels))
+        self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
     def get_trainset(self, batch_size=1, shuffle=False):
         if self.__training__:
@@ -202,34 +208,14 @@ class ImageNet2012(Dataset):
             return accuracy, loss_val
 
 
-class ResNet18(Model):
-    def __init__(self, pretrained=True):
-        super(ResNet18, self).__init__()
+class ResNet50(Model):
+    def __init__(self):
+        super(ResNet50, self).__init__()
 
-        # Step 1: Create the ResNet-18 model without any weights
-        self.resnet18 = models.resnet18(weights=None)
+        self.resnet50 = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 
-        # Step 2: Store the original conv1 layer
-        original_conv1 = self.resnet18.conv1
-
-        if pretrained:
-            # Step 3: Load the CIFAR-100 weights into the model (excluding the fully connected layer)
-            state_dict = torch.load(
-                "datasets/weights/resnet18_CIFAR100.bin", map_location="cpu"
-            )
-            state_dict = {
-                k: v
-                for k, v in state_dict.items()
-                if ("fc" not in k and "conv1" not in k)
-            }
-            self.resnet18.load_state_dict(state_dict, strict=False)
-
-            # Step 4: Restore the original conv1 layer back to the model
-            self.resnet18.conv1 = original_conv1
-
-            # Modify the last fully connected layer for NUM_CLASSES of ImageNet
-            fc_in_features = self.resnet18.fc.in_features
-            self.resnet18.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
+        fc_in_features = self.resnet50.fc.in_features
+        self.resnet50.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
 
     def forward(self, x):
-        return self.resnet18(x)
+        return self.resnet50(x)
