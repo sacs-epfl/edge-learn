@@ -105,7 +105,7 @@ class Client(Node):
         self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
 
     def train(self):
-        if self.iteration % self.lr_scheduler_frequency == 0:
+        if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
             self.lr_scheduler.step()
         data, target = None, None
         try:

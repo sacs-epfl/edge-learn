@@ -198,7 +198,7 @@ class PrimaryCloud(Node):
             self.batch = self.received_batch
 
     def train(self):
-        if self.iteration % self.lr_scheduler_frequency == 0:
+        if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
             self.lr_scheduler.step()
         self.loss_amt = self.trainer.trainstep(
             self.batch["data"], self.batch["target"].long()
