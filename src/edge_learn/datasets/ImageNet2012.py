@@ -93,7 +93,7 @@ class ImageNet2012(Dataset):
             for idx, (_, target) in enumerate(trainset.samples)
             if target < NUM_CLASSES
         ]
-        logging.info(f"Number of elements in training dataset: {indices}")
+        logging.info(f"Number of elements in training dataset: {len(indices)}")
         trainset = torch.utils.data.Subset(trainset, indices)
 
         c_len = len(trainset)
@@ -143,7 +143,7 @@ class ImageNet2012(Dataset):
         for indices in category_indices.values():
             selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
 
-        logging.info(f"Number of elements in testing dataset: {selected_indices}")
+        logging.info(f"Number of elements in testing dataset: {len(selected_indices)}")
 
         self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
