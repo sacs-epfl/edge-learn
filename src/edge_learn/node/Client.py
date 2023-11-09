@@ -105,6 +105,8 @@ class Client(Node):
         self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
 
     def train(self):
+        if self.iteration % self.lr_scheduler_frequency == 0:
+            self.lr_scheduler.step()
         data, target = None, None
         try:
             data, target = next(self.dataiter)
@@ -131,7 +133,9 @@ class Client(Node):
                 "total_data_per_n": {},
             }
 
-        results_dict["bytes_sent_to_edge"][self.iteration + 1] = self.amt_bytes_sent_to_edge
+        results_dict["bytes_sent_to_edge"][
+            self.iteration + 1
+        ] = self.amt_bytes_sent_to_edge
 
         if hasattr(self.communication, "total_meta"):
             results_dict["total_meta"][
@@ -165,7 +169,17 @@ class Client(Node):
     ):
         if LearningMode(learning_mode) == LearningMode.BASELINE:
             return None
-        return cls(rank, machine_id, mapping, config, log_dir, log_level, batch_size_to_send, learning_mode, num_threads)
+        return cls(
+            rank,
+            machine_id,
+            mapping,
+            config,
+            log_dir,
+            log_level,
+            batch_size_to_send,
+            learning_mode,
+            num_threads,
+        )
 
     def __init__(
         self,
@@ -230,6 +244,7 @@ class Client(Node):
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
+        self.init_lr_scheduler(config["LR_SCHEDULER"])
         self.init_trainer(config["TRAIN_PARAMS"])
 
         self.message_queue = dict()
@@ -300,6 +315,19 @@ class Client(Node):
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, 1, **comm_params
         )
+
+    def init_lr_scheduler(self, scheduler_configs):
+        scheduler_module = importlib.import_module(
+            scheduler_configs["scheduler_package"]
+        )
+        scheduler_class = getattr(
+            scheduler_module, scheduler_configs["scheduler_class"]
+        )
+        self.lr_scheduler_frequency = scheduler_configs["frequency"]
+        scheduler_params = utils.remove_key(
+            scheduler_configs, ["scheduler_package", "scheduler_class"]
+        )
+        self.lr_scheduler = scheduler_class(self.optimizer, **scheduler_params)
 
     def set_threads(self):
         if self.learning_mode == LearningMode.ONLY_WEIGHTS:

@@ -198,6 +198,8 @@ class PrimaryCloud(Node):
             self.batch = self.received_batch
 
     def train(self):
+        if self.iteration % self.lr_scheduler_frequency == 0:
+            self.lr_scheduler.step()
         self.loss_amt = self.trainer.trainstep(
             self.batch["data"], self.batch["target"].long()
         )
@@ -385,6 +387,7 @@ class PrimaryCloud(Node):
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
+        self.init_lr_scheduler(config["LR_SCHEDULER"])
         self.init_trainer(config["TRAIN_PARAMS"])
 
         self.message_queue = dict()
@@ -463,6 +466,19 @@ class PrimaryCloud(Node):
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, 1, **comm_params
         )
+
+    def init_lr_scheduler(self, scheduler_configs):
+        scheduler_module = importlib.import_module(
+            scheduler_configs["scheduler_package"]
+        )
+        scheduler_class = getattr(
+            scheduler_module, scheduler_configs["scheduler_class"]
+        )
+        self.lr_scheduler_frequency = scheduler_configs["frequency"]
+        scheduler_params = utils.remove_key(
+            scheduler_configs, ["scheduler_package", "scheduler_class"]
+        )
+        self.lr_scheduler = scheduler_class(self.optimizer, **scheduler_params)
 
     def set_threads(self):
         torch.set_num_threads(self.num_threads)
