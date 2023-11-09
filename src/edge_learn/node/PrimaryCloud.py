@@ -389,6 +389,7 @@ class PrimaryCloud(Node):
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_lr_scheduler(config["LR_SCHEDULER"])
         self.init_trainer(config["TRAIN_PARAMS"])
+        self.model = self.trainer.model
 
         self.message_queue = dict()
         self.barrier = set()
