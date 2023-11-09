@@ -3,6 +3,7 @@ import importlib
 import logging
 import json
 import os
+from ast import literal_eval
 
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.node.Node import Node

@@ -4,6 +4,7 @@ import json
 from collections import deque
 import logging
 import importlib
+from ast import literal_eval
 
 from time import perf_counter
 

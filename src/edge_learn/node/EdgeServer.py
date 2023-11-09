@@ -4,8 +4,7 @@ import torch
 import os
 import json
 import importlib
-import math
-from matplotlib import pyplot as plt
+from ast import literal_eval
 
 from decentralizepy.node.Node import Node
 from decentralizepy import utils
