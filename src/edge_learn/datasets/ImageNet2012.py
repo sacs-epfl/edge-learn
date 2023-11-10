@@ -243,7 +243,7 @@ class EfficientNetB0(Model):
 class MobileNetV2Custom(Model):
     def __init__(self, num_classes=100):
         super(MobileNetV2Custom, self).__init__()
-        self.mobilenet_v2 = models.mobilenet_v2(pretrained=False)
+        self.mobilenet_v2 = models.mobilenet_v2(weights="DEFAULT")
         num_ftrs = self.mobilenet_v2.classifier[1].in_features
         self.mobilenet_v2.classifier = nn.Sequential(
             nn.Dropout(p=0.2), nn.Linear(num_ftrs, num_classes)
