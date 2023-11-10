@@ -16,7 +16,7 @@ from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.datasets.Partitioner import DataPartitioner
 from edge_learn.enums.LearningMode import LearningMode
 
-NUM_CLASSES = 100
+NUM_CLASSES = 1000
 # MAX is 50
 TEST_IMAGES_PER_CATEGORY = 50
 
@@ -170,15 +170,15 @@ class ImageNet2012(Dataset):
 
         logging.debug("Test Loader instantiated.")
 
-        correct_pred = [0 for _ in range(NUM_CLASSES)]
-        total_pred = [0 for _ in range(NUM_CLASSES)]
+        correct_pred = {}
+        total_pred = {}
 
         total_correct = 0
         total_predicted = 0
 
         # Get the device of the model
         device = next(model.parameters()).device
-
+        logging.debug("Testing on: {}".format(device))
         with torch.no_grad():
             loss_val = 0.0
             count = 0
@@ -193,28 +193,36 @@ class ImageNet2012(Dataset):
                 _, predictions = torch.max(outputs, 1)
                 for label, prediction in zip(labels, predictions):
                     logging.debug("{} predicted as {}".format(label, prediction))
+                    label = label.item()
+
+                    if label not in correct_pred:
+                        correct_pred[label] = 0
+                        total_pred[label] = 0
+
                     if label == prediction:
-                        correct_pred[label.item()] += 1
+                        correct_pred[label] += 1
                         total_correct += 1
-                    total_pred[label.item()] += 1
+                    total_pred[label] += 1
                     total_predicted += 1
 
             logging.debug("Predicted on the test set")
 
-            for key, value in enumerate(correct_pred):
-                if total_pred[key] != 0:
-                    accuracy = 100 * float(value) / total_pred[key]
-                else:
-                    accuracy = 100.0
+            class_accuracies = {}
+            for key, value in correct_pred.items():
+                accuracy = (
+                    100.0
+                    if total_pred[key] == 0
+                    else 100 * float(value) / total_pred[key]
+                )
+                class_accuracies[key] = accuracy
                 logging.debug(
                     "Accuracy for class {} is: {:.1f} %".format(key, accuracy)
                 )
 
-            accuracy = 100 * float(total_correct) / total_predicted
+            overall_accuracy = 100 * float(total_correct) / total_predicted
             loss_val = loss_val / count
-            logging.info("Overall accuracy is: {:.1f} %".format(accuracy))
-            model.train()
-            return accuracy, loss_val
+            logging.info("Overall accuracy is: {:.1f} %".format(overall_accuracy))
+            return overall_accuracy, loss_val, class_accuracies
 
 
 class ResNet50(Model):

@@ -45,6 +45,7 @@ class Training:
 
     # Assuming self.model is already wrapped with DataParallel
     def trainstep(self, data, target):
+        self.model.train()
         self.optimizer.zero_grad()
         output = self.model(data)  # data can be on CPU
         loss_val = self.loss(
