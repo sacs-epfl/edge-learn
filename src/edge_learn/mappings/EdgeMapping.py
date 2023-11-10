@@ -1,5 +1,8 @@
-from decentralizepy.mappings.Mapping import Mapping
 import logging
+
+from decentralizepy.mappings.Mapping import Mapping
+from edge_learn.enums.LearningMode import LearningMode
+
 
 class EdgeMapping(Mapping):
     """
@@ -10,7 +13,12 @@ class EdgeMapping(Mapping):
     """
 
     def __init__(
-        self, n_machines, procs_per_machine, global_service_machine=0, current_machine=0
+        self,
+        n_machines,
+        procs_per_machine,
+        learning_mode,
+        global_service_machine=0,
+        current_machine=0,
     ):
         """
         Constructor
@@ -28,16 +36,16 @@ class EdgeMapping(Mapping):
 
         """
 
-        
         super().__init__(n_machines * procs_per_machine + n_machines + 1)
         self.n_machines = n_machines
         self.edge_servers = n_machines
         self.num_clients = n_machines * procs_per_machine
-        self.n_procs = self.num_clients + self.edge_servers + 1 # the singular cloud
+        self.n_procs = self.num_clients + self.edge_servers + 1  # the singular cloud
         self.procs_per_machine = procs_per_machine
         self.local_clients = procs_per_machine
         self.global_service_machine = global_service_machine
         self.current_machine = current_machine
+        self.learning_mode = LearningMode(learning_mode)
 
     def get_procs_per_machine(self):
         """
@@ -50,7 +58,7 @@ class EdgeMapping(Mapping):
 
         """
         return self.procs_per_machine
-    
+
     def get_num_clients(self):
         return self.num_clients
 
@@ -123,7 +131,19 @@ class EdgeMapping(Mapping):
         """
         Returns the data unique identifier, useful for the dataset
         """
-        return uid - self.n_machines
+        if self.learning_mode == LearningMode.BASELINE:
+            if uid == -1:
+                return 0
+            else:
+                return -1
+        else:
+            return uid - self.n_machines
+
+    def get_number_of_nodes_read_from_dataset(self) -> int:
+        if self.learning_mode == LearningMode.BASELINE:
+            return 1
+        else:
+            return self.n_machines * self.procs_per_machine
 
     def get_machine_and_rank(self, uid: int):
         """

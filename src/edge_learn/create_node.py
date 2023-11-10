@@ -15,6 +15,7 @@ def create_node(node_type, rank, config_dir):
     mapping = EdgeMapping(
         params["number_of_machines"],
         params["clients_per_machine"],
+        params["learning_mode"],
         params["cloud_machine_id"],
         params["machine_id"],
     )

@@ -99,15 +99,19 @@ class ImageNet2012(Dataset):
         c_len = len(trainset)
 
         if self.sizes == None:
-            e = c_len // self.num_partitions
+            e = c_len // self.mapping.get_number_of_nodes_read_from_dataset()
             frac = e / c_len
-            self.sizes = [frac] * self.num_partitions
-            self.sizes[-1] += 1.0 - sum(self.sizes)
+            self.sizes = [frac] * self.mapping.get_number_of_nodes_read_from_dataset()
+            self.sizes[-1] += 1.0 - sum(self.sizes)  # Give the last one the rest
             logging.debug("Size fractions: {}".format(self.sizes))
 
         self.trainset = DataPartitioner(
             trainset, sizes=self.sizes, seed=self.random_seed
-        ).use(self.dataset_id)
+        ).use(
+            self.mapping.get_duid_from_uid(
+                self.mapping.get_uid(self.rank, self.machine_id)
+            )
+        )
 
     def load_testset(self):
         logging.info("Starting to load the testset...")
