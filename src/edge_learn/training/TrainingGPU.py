@@ -19,7 +19,6 @@ class Training:
         loss,
         log_dir,
         gpu_mapping_filepath="",
-        train_batch_size="",
     ):
         self.model = model
         self.optimizer = optimizer
@@ -29,7 +28,6 @@ class Training:
         self.machine_id = machine_id
         self.mapping = mapping
         self.uid = mapping.get_uid(self.rank, self.machine_id)
-        self.train_batch_size = utils.conditional_value(train_batch_size, "", int(1))
 
         logging.debug("My uid: " + str(self.uid))
 
@@ -57,7 +55,7 @@ class Training:
         return loss_val.item()
 
     def eval_loss(self, dataset):
-        trainset = dataset.get_trainset(self.train_batch_size)
+        trainset = dataset.get_trainset(64)
         epoch_loss = 0.0
         count = 0
         with torch.no_grad():
