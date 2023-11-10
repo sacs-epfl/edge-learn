@@ -87,14 +87,14 @@ class ImageNet2012(Dataset):
         )
         logging.info("Full trainset loaded.")
 
-        # Filter the dataset to include only the first `NUM_CLASSES` classes
-        indices = [
-            idx
-            for idx, (_, target) in enumerate(trainset.samples)
-            if target < NUM_CLASSES
-        ]
-        logging.info(f"Number of elements in training dataset: {len(indices)}")
-        trainset = torch.utils.data.Subset(trainset, indices)
+        # # Filter the dataset to include only the first `NUM_CLASSES` classes
+        # indices = [
+        #     idx
+        #     for idx, (_, target) in enumerate(trainset.samples)
+        #     if target < NUM_CLASSES
+        # ]
+        # logging.info(f"Number of elements in training dataset: {len(indices)}")
+        # trainset = torch.utils.data.Subset(trainset, indices)
 
         c_len = len(trainset)
 
@@ -147,7 +147,7 @@ class ImageNet2012(Dataset):
 
         self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
-    def get_trainset(self, batch_size=1, shuffle=False):
+    def get_trainset(self, batch_size=8, shuffle=True):
         if self.__training__:
             return DataLoader(self.trainset, batch_size=batch_size, shuffle=shuffle)
         raise RuntimeError("Train set not initialised!")
@@ -241,13 +241,13 @@ class EfficientNetB0(Model):
 
 
 class MobileNetV2Custom(Model):
-    def __init__(self, num_classes=100):
+    def __init__(self):
         super(MobileNetV2Custom, self).__init__()
         self.mobilenet_v2 = models.mobilenet_v2(weights="DEFAULT")
-        num_ftrs = self.mobilenet_v2.classifier[1].in_features
-        self.mobilenet_v2.classifier = nn.Sequential(
-            nn.Dropout(p=0.2), nn.Linear(num_ftrs, num_classes)
-        )
+        # num_ftrs = self.mobilenet_v2.classifier[1].in_features
+        # self.mobilenet_v2.classifier = nn.Sequential(
+        #     nn.Dropout(p=0.2), nn.Linear(num_ftrs, NUM_CLASSES)
+        # )
 
     def forward(self, x):
         return self.mobilenet_v2(x)
