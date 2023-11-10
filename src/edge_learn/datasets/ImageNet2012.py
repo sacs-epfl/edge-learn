@@ -132,24 +132,25 @@ class ImageNet2012(Dataset):
             root=self.test_dir, split="val", transform=test_transform
         )
         logging.info("Full testset loaded.")
+        self.testset = full_testset
 
-        # Group image indices by category
-        category_indices = {}
-        for idx, (_, label) in enumerate(full_testset.imgs):
-            if label < NUM_CLASSES:
-                if label not in category_indices:
-                    category_indices[label] = []
-                category_indices[label].append(idx)
-        logging.info("Grouped image indices by category.")
+        # # Group image indices by category
+        # category_indices = {}
+        # for idx, (_, label) in enumerate(full_testset.imgs):
+        #     if label < NUM_CLASSES:
+        #         if label not in category_indices:
+        #             category_indices[label] = []
+        #         category_indices[label].append(idx)
+        # logging.info("Grouped image indices by category.")
 
-        # Select up to TEST_IMAGES_PER_CATEGORY images from each of the first NUM_CLASSES categories
-        selected_indices = []
-        for indices in category_indices.values():
-            selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
+        # # Select up to TEST_IMAGES_PER_CATEGORY images from each of the first NUM_CLASSES categories
+        # selected_indices = []
+        # for indices in category_indices.values():
+        #     selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
 
-        logging.info(f"Number of elements in testing dataset: {len(selected_indices)}")
+        # logging.info(f"Number of elements in testing dataset: {len(selected_indices)}")
 
-        self.testset = torch.utils.data.Subset(full_testset, selected_indices)
+        # self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
     def get_trainset(self, batch_size=8, shuffle=True):
         if self.__training__:
