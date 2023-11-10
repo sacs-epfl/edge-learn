@@ -229,7 +229,7 @@ class EfficientNetB0(Model):
     def __init__(self):
         super(EfficientNetB0, self).__init__()
 
-        self.efficientnet_b0 = models.efficientnet_b0(pretrained=True)
+        self.efficientnet_b0 = models.efficientnet_b0(pretrained=False)
 
         num_ftrs = self.efficientnet_b0.classifier[1].in_features
         self.efficientnet_b0.classifier = nn.Sequential(
