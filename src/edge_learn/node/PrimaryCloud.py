@@ -81,7 +81,7 @@ class PrimaryCloud(Node):
         if self.dataset.__testing__ and self.rounds_to_test == 0:
             self.rounds_to_test = self.test_after
             logging.info("Evaluating on test set.")
-            ta, tl = self.dataset.test(self.model, self.loss)
+            ta, tl = self.trainer.test(self.loss, self.dataset.get_testset())
             self.test_acc = ta
             self.test_loss = tl
 
@@ -390,7 +390,6 @@ class PrimaryCloud(Node):
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
         self.init_lr_scheduler(config["LR_SCHEDULER"])
         self.init_trainer(config["TRAIN_PARAMS"])
-        self.model = self.trainer.model
 
         self.message_queue = dict()
         self.barrier = set()

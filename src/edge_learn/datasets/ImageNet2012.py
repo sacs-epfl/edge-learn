@@ -164,66 +164,6 @@ class ImageNet2012(Dataset):
             )
         raise RuntimeError("Test set not initialised!")
 
-    def test(self, model, loss):
-        model.eval()
-        testloader = self.get_testset()
-
-        logging.debug("Test Loader instantiated.")
-
-        correct_pred = {}
-        total_pred = {}
-
-        total_correct = 0
-        total_predicted = 0
-
-        # Get the device of the model
-        device = next(model.parameters()).device
-        logging.debug("Testing on: {}".format(device))
-        with torch.no_grad():
-            loss_val = 0.0
-            count = 0
-            for elems, labels in testloader:
-                # Move the data to the same device as the model
-                elems = elems.to(device)
-                labels = labels.to(device)
-
-                outputs = model(elems)
-                loss_val += loss(outputs, labels).item()
-                count += 1
-                _, predictions = torch.max(outputs, 1)
-                for label, prediction in zip(labels, predictions):
-                    logging.debug("{} predicted as {}".format(label, prediction))
-                    label = label.item()
-
-                    if label not in correct_pred:
-                        correct_pred[label] = 0
-                        total_pred[label] = 0
-
-                    if label == prediction:
-                        correct_pred[label] += 1
-                        total_correct += 1
-                    total_pred[label] += 1
-                    total_predicted += 1
-
-            logging.debug("Predicted on the test set")
-
-            class_accuracies = {}
-            for key, value in correct_pred.items():
-                accuracy = (
-                    100.0
-                    if total_pred[key] == 0
-                    else 100 * float(value) / total_pred[key]
-                )
-                class_accuracies[key] = accuracy
-                logging.debug(
-                    "Accuracy for class {} is: {:.1f} %".format(key, accuracy)
-                )
-
-            overall_accuracy = 100 * float(total_correct) / total_predicted
-            loss_val = loss_val / count
-            logging.info("Overall accuracy is: {:.1f} %".format(overall_accuracy))
-            return overall_accuracy, loss_val
-
 
 class ResNet50(Model):
     def __init__(self):
