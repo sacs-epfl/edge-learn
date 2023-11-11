@@ -107,7 +107,7 @@ class Sharing:
                 to_cat.append(t)
         flat = torch.cat(to_cat)
         data = dict()
-        data["params"] = flat.numpy()
+        data["params"] = flat.cpu().numpy()
         logging.info("Model sending this round: {}".format(data["params"]))
         return self.compress_data(data)
 
