@@ -1,0 +1,26 @@
+{
+  "0": {
+    "host": "discslab-server2",
+    "cloud_port": 9000,
+    "edge_port": 9001,
+    "client_ports": [9002, 9003]
+  },
+  "1": {
+	"host": "discslab-server2",
+	"cloud_port": 9100,
+	"edge_port": 9101,
+	"client_ports": [9102, 9103]
+  },
+  "2": {
+	"host": "discslab-server2",
+	"cloud_port": 9200,
+	"edge_port": 9201,
+	"client_ports": [9202, 9203]
+  },
+  "3": {
+	"host": "discslab-server2",
+	"cloud_port": 9300,
+	"edge_port": 9301,
+	"client_ports": [9302, 9303]
+  }
+}
