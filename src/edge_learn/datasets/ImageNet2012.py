@@ -182,9 +182,12 @@ class ResNet50Pretrained(Model):
     def __init__(self):
         super(ResNet50Pretrained, self).__init__()
 
-        self.resnet50 = models.resnet50(weights="./weights/resnet50_cifar100.bin")
+        self.resnet50 = models.resnet50()
+        self.resnet50.load_state_dict(
+            torch.load("./datasets/weights/resnet50_cifar100.bin")
+        )
 
-        fc_in_features = self.resnet50.fc.in_feature
+        fc_in_features = self.resnet50.fc.in_features
         self.resnet50.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
 
     def forward(self, x):
