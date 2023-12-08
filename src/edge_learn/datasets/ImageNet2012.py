@@ -169,7 +169,7 @@ class ResNet50(Model):
     def __init__(self):
         super(ResNet50, self).__init__()
 
-        self.resnet50 = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+        self.resnet50 = models.resnet50()
 
         fc_in_features = self.resnet50.fc.in_features
         self.resnet50.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
