@@ -178,6 +178,19 @@ class ResNet50(Model):
         return self.resnet50(x)
 
 
+class Resnet50Pretrained(Model):
+    def __init__(self):
+        super(Resnet50Pretrained, self).__init__()
+
+        self.resnet50 = models.resnet50(weights="./weights/resnet50_cifar100.bin")
+
+        fc_in_features = self.resnet50.fc.in_feature
+        self.resnet50.fc = torch.nn.Linear(fc_in_features, NUM_CLASSES)
+
+    def forward(self, x):
+        return self.resnet50(x)
+
+
 class EfficientNetB0(Model):
     def __init__(self):
         super(EfficientNetB0, self).__init__()
@@ -204,6 +217,7 @@ class MobileNetV2Pretrained(Model):
 
     def forward(self, x):
         return self.mobilenet_v2(x)
+
 
 class MobileNetV2(Model):
     def __init__(self):
