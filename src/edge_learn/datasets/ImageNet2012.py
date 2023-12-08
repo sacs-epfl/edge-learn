@@ -178,9 +178,9 @@ class ResNet50(Model):
         return self.resnet50(x)
 
 
-class Resnet50Pretrained(Model):
+class ResNet50Pretrained(Model):
     def __init__(self):
-        super(Resnet50Pretrained, self).__init__()
+        super(ResNet50Pretrained, self).__init__()
 
         self.resnet50 = models.resnet50(weights="./weights/resnet50_cifar100.bin")
 
