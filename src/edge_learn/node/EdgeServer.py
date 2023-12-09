@@ -255,16 +255,19 @@ class EdgeServer(Node):
         logging.info("Starting training phase")
         if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
             self.lr_scheduler.step()
+
+        losses = []
         for mini_batch in self.mini_batches:
-            self.loss_amt = self.trainer.trainstep(
-                mini_batch["data"], mini_batch["target"].long()
+            losses.append(
+                self.trainer.trainstep(mini_batch["data"], mini_batch["target"].long())
             )
 
             logging.info(
                 "Trained model for one mini-batch with a loss of {}".format(
-                    self.loss_amt
+                    losses[len(losses) - 1]
                 )
             )
+        self.loss_amt = losses.sum() / len(losses)
         logging.info("Finished training phase")
 
     def send_model_to_primary_cloud(self):
