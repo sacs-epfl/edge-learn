@@ -201,9 +201,9 @@ class EdgeServer(Node):
                     mini_batch_target = torch.cat(
                         (mini_batch_target, extra_records[1]), dim=0
                     )
-                self.mini_batches.append(
-                    {"data": mini_batch_data, "target": mini_batch_target}
-                )
+            self.mini_batches.append(
+                {"data": mini_batch_data, "target": mini_batch_target}
+            )
 
         logging.info("Created mini-batches from received batch data")
 
@@ -267,7 +267,7 @@ class EdgeServer(Node):
                     losses[len(losses) - 1]
                 )
             )
-        self.loss_amt = sum(losses) / len(losses)
+        self.loss_amt = sum(losses) / len(losses) if len(losses) != 0 else -1
         logging.info("Finished training phase")
 
     def send_model_to_primary_cloud(self):
