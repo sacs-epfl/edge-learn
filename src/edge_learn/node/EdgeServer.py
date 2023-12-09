@@ -33,7 +33,7 @@ class EdgeServer(Node):
                 self.send_model_to_clients()
                 self.get_data_from_clients()
                 self.create_batch_and_cache()
-                self.fill_batch_till_target()
+                self.create_mini_batches()
                 self.train()
                 self.send_model_to_primary_cloud()
                 self.collect_stats()
@@ -179,38 +179,93 @@ class EdgeServer(Node):
         logging.info("Created batch from data received from clients")
         logging.info("Type of data received: %s", self.received_batch["data"].dtype)
 
-    def fill_batch_till_target(self):
-        self.batch = dict()
-        current_batch_size = self.received_batch["data"].shape[0]
-        amountRecordsNeeded = self.train_batch_size - current_batch_size
-        if amountRecordsNeeded < 0:
-            self.batch = self.received_batch
-            return
-        data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
-        if data_loader is not None:
-            iter_data_loader = iter(data_loader)
-            relooked_batch = next(iter_data_loader)
-            logging.info("Type of data relooked: %s", relooked_batch[0].dtype)
-            logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
-            self.batch["data"] = torch.cat(
-                (self.received_batch["data"], relooked_batch[0])
-            )
-            self.batch["target"] = torch.cat(
-                (self.received_batch["target"], relooked_batch[1])
-            )
-        else:
-            self.batch = self.received_batch
+    def create_mini_batches(self):
+        self.mini_batches = []
+        batch_data = self.received_batch["data"]
+        batch_target = self.received_batch["target"]
+        total_size = batch_data.size(0)
+
+        for i in range(0, total_size, self.train_batch_size):
+            mini_batch_data = batch_data[i : i + self.train_batch_size]
+            mini_batch_target = batch_target[i : i + self.train_batch_size]
+
+            if len(mini_batch_data) < self.train_batch_size:
+                amount_records_needed = self.train_batch_size - len(mini_batch_data)
+                data_loader = self.collected_dataset.get_trainset(amount_records_needed)
+                if data_loader is not None:
+                    iter_data_loader = iter(data_loader)
+                    extra_records = next(iter_data_loader)
+                    mini_batch_data = torch.cat(
+                        (mini_batch_data, extra_records[0]), dim=0
+                    )
+                    mini_batch_target = torch.cat(
+                        (mini_batch_target, extra_records[1]), dim=0
+                    )
+                self.mini_batches.append(
+                    {"data": mini_batch_data, "target": mini_batch_target}
+                )
+
+        logging.info("Created mini-batches from received batch data")
+
+        # mini_batch = []
+        # while mini_batch.__len__() != 0:
+        #     mini_batch.append(batch.remove(0))
+        #     if mini_batch.__len__() == self.train_batch_size:
+        #         self.mini_batches.append(mini_batch)
+        #         mini_batch = []
+        #     if mini_batch.__len__() != 0:
+        #         amount_records_needed = self.train_batch_size - mini_batch.__len__()
+        #         data_loader = self.collected_dataset.get_trainset(amount_records_needed)
+        #         if data_loader is not None:
+        #             iter_data_loader = iter(data_loader)
+        #             extra_records = next(iter_data_loader)
+        #             logging.info(
+        #                 "Amount of extra records taken: {}".format(extra_records[0].shape)
+        #             )
+        #             mini_batch["data"] = torch.cat(
+        #                 mini_batch["data"], extra_records["data"]
+        #             )
+        #             mini_batch["target"] = torch.cat(
+        #                 mini_batch["target"], extra_records["target"]
+        #             )
+
+    # def fill_batch_till_target(self):
+    #     self.batch = dict()
+    #     current_batch_size = self.received_batch["data"].shape[0]
+    #     amountRecordsNeeded = self.train_batch_size - current_batch_size
+    #     if amountRecordsNeeded < 0:
+    #         self.batch = self.received_batch
+    #         return
+    #     data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
+    #     if data_loader is not None:
+    #         iter_data_loader = iter(data_loader)
+    #         relooked_batch = next(iter_data_loader)
+    #         logging.info("Type of data relooked: %s", relooked_batch[0].dtype)
+    #         logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
+    #         self.batch["data"] = torch.cat(
+    #             (self.received_batch["data"], relooked_batch[0])
+    #         )
+    #         self.batch["target"] = torch.cat(
+    #             (self.received_batch["target"], relooked_batch[1])
+    #         )
+    #     else:
+    #         self.batch = self.received_batch
 
     def train(self):
+        logging.info("Starting training phase")
         if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
             self.lr_scheduler.step()
-        self.loss_amt = self.trainer.trainstep(
-            self.batch["data"], self.batch["target"].long()
-        )
+        for mini_batch in self.mini_batches:
+            self.loss_amt = self.trainer.trainstep(
+                mini_batch["data"], mini_batch["target"].long()
+            )
 
-        logging.info(
-            "Trained model for one step with a loss of {}".format(self.loss_amt)
-        )
+            logging.info(
+                "Trained model for one mini-batch with a loss of {}".format(
+                    self.loss_amt
+                )
+            )
+        logging.info("Finished training phase")
 
     def send_model_to_primary_cloud(self):
         to_send = self.sharing.serialized_model()
