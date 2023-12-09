@@ -31,6 +31,27 @@ class PrimaryCloud(Node):
             iteration += 1
             self.test()
             if self.test_acc != None and self.test_acc > self.target_acc:
+                file_path = os.path.join(
+                    self.log_dir, "{}_results.json".format(self.rank)
+                )
+                if os.path.exists(file_path):
+                    with open(
+                        file_path,
+                        "r",
+                    ) as inf:
+                        results_dict = json.load(inf)
+                else:
+                    results_dict = {
+                        "train_loss": {},
+                        "test_loss": {},
+                        "test_acc": {},
+                        "bytes_sent_to_each_edge": {},
+                        "total_elapsed_time": {},
+                        "total_meta": {},
+                        "total_data_per_n": {},
+                    }
+                if self.test_acc != None:
+                    results_dict["test_acc"][self.iteration] = self.test_acc
                 break
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
