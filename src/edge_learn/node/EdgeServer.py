@@ -267,7 +267,7 @@ class EdgeServer(Node):
                     losses[len(losses) - 1]
                 )
             )
-        self.loss_amt = losses.sum() / len(losses)
+        self.loss_amt = sum(losses) / len(losses)
         logging.info("Finished training phase")
 
     def send_model_to_primary_cloud(self):
