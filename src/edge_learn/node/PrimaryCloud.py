@@ -215,10 +215,11 @@ class PrimaryCloud(Node):
 
     def collect_stats(self):
         cur_time = perf_counter()
+        file_path = os.path.join(self.log_dir, "{}_results.json".format(self.rank))
 
-        if self.iteration != 0:
+        if os.path.exists(file_path):
             with open(
-                os.path.join(self.log_dir, "{}_results.json".format(self.rank)),
+                file_path,
                 "r",
             ) as inf:
                 results_dict = json.load(inf)
@@ -267,7 +268,7 @@ class PrimaryCloud(Node):
     def finalize_run(self):
         self.disconnect_neighbors()
         self.save_data()
-        self.create_and_save_graphs()
+        # self.create_and_save_graphs()
 
     def disconnect_neighbors(self):
         if not self.sent_disconnections:

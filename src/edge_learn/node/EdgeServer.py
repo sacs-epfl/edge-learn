@@ -282,9 +282,11 @@ class EdgeServer(Node):
         self.amt_bytes_sent_to_cloud = self.communication.total_bytes - before
 
     def collect_stats(self):
-        if self.iteration != 0:
+        file_path = os.path.join(self.log_dir, "{}_results.json".format(self.rank))
+
+        if os.path.exists(file_path):
             with open(
-                os.path.join(self.log_dir, "{}_results.json".format(self.rank)),
+                file_path,
                 "r",
             ) as inf:
                 results_dict = json.load(inf)
