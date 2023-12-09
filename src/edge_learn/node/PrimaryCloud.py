@@ -26,8 +26,12 @@ class PrimaryCloud(Node):
 
     def runHybrid(self):
         self.initialise_run()
-        for iteration in range(self.iterations):
+        iteration = 0
+        while True:
+            iteration += 1
             self.test()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                break
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
             self.get_model_from_edge_servers_and_store_in_peer_deque()
@@ -313,7 +317,7 @@ class PrimaryCloud(Node):
         machine_id: int,
         mapping: EdgeMapping,
         config,
-        iterations=1,
+        target_acc,
         log_dir=".",
         weights_store_dir=".",
         log_level=logging.INFO,
@@ -328,7 +332,7 @@ class PrimaryCloud(Node):
             machine_id,
             mapping,
             config,
-            iterations,
+            target_acc,
             log_dir,
             weights_store_dir,
             log_level,
@@ -357,7 +361,7 @@ class PrimaryCloud(Node):
         machine_id: int,
         mapping: EdgeMapping,
         config: dict,
-        iterations: int,
+        target_acc: float,
         log_dir: str,
         weights_store_dir: str,
         log_level: int,
@@ -373,7 +377,7 @@ class PrimaryCloud(Node):
             rank,
             machine_id,
             mapping,
-            iterations,
+            target_acc,
             log_dir,
             weights_store_dir,
             test_after,
@@ -410,7 +414,7 @@ class PrimaryCloud(Node):
         rank: int,
         machine_id: int,
         mapping: EdgeMapping,
-        iterations: int,
+        target_acc: float,
         log_dir: str,
         weights_store_dir: str,
         test_after: int,
@@ -425,7 +429,7 @@ class PrimaryCloud(Node):
         self.uid = -1
         self.parents = self.mapping.get_parents(self.uid)
         self.children = self.mapping.get_children(self.uid)
-        self.iterations = iterations
+        self.target_acc = target_acc
         self.log_dir = log_dir
         self.weights_store_dir = weights_store_dir
         self.test_after = test_after

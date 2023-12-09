@@ -35,7 +35,7 @@ def create_node(node_type, rank, config_dir):
             params["machine_id"],
             mapping,
             config,
-            params["number_of_iterations"],
+            params["target_acc"],
             "/results",
             "/results",
             cur_log_level,

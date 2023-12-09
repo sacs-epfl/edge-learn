@@ -3,12 +3,12 @@
   "cloud_machine_id": 0,
   "number_of_machines": 3,
   "clients_per_machine": 2,
-  "number_of_iterations": 2000,
+  "target_acc": 52.5,
   "log_level": "DEBUG",
   "test_frequency": 50,
   "batch_size_to_send_to_edge": 42,
-  "train_batch_size": 256, 
+  "train_batch_size": 256,
   "learning_mode": "H",
   "num_threads_cloud": 40,
-  "num_threads_edge": 10  
+  "num_threads_edge": 10
 }
