@@ -70,10 +70,11 @@ class Client(Node):
         logging.info("Received model from edge")
 
     def send_batch_to_edge_server(self):
-        to_send = dict()
-        to_send["CHANNEL"] = "DATA"
-        to_send["iteration"] = self.iteration
         try:
+            to_send = dict()
+            to_send["CHANNEL"] = "DATA"
+            to_send["iteration"] = self.iteration
+
             data, target = next(self.dataiter)
             if data.nelement() != 0:
                 self.last_dtype_data = data.dtype
@@ -82,17 +83,21 @@ class Client(Node):
                 self.last_dtype_target = target.dtype
                 logging.info("Last dtype target: %s", self.last_dtype_target)
             to_send["params"] = (data, target)
-        except StopIteration:
-            logging.debug("Ran out of data")
-            to_send["params"] = (
-                torch.tensor([], dtype=self.last_dtype_data),
-                torch.tensor([], dtype=self.last_dtype_target),
-            )
-        to_send["STATUS"] = "OK"
 
-        before = self.communication.total_bytes
-        self.communication.send(self.parents[0], to_send)
-        self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
+            # to_send["params"] = (
+            #     torch.tensor([], dtype=self.last_dtype_data),
+            #     torch.tensor([], dtype=self.last_dtype_target),
+            # )
+            to_send["STATUS"] = "OK"
+
+            before = self.communication.total_bytes
+            self.communication.send(self.parents[0], to_send)
+            self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
+
+        except StopIteration:
+            logging.debug("Ran out of data, recreating iterable")
+            self.dataiter = iter(self.trainset)
+            self.send_batch_to_edge_server()
 
     def send_model_to_edge_server(self):
         to_send = self.sharing.serialized_model()
