@@ -160,8 +160,8 @@ class EdgeServer(Node):
 
     def create_batch_and_cache(self):
         self.create_batch()
-        if len(self.received_batch["data"]) != 0:
-            self.collected_dataset.add_batch(self.received_batch)
+        # if len(self.received_batch["data"]) != 0:
+        #     self.collected_dataset.add_batch(self.received_batch)
 
     def create_batch(self):
         batch_data = []
@@ -189,18 +189,18 @@ class EdgeServer(Node):
             mini_batch_data = batch_data[i : i + self.train_batch_size]
             mini_batch_target = batch_target[i : i + self.train_batch_size]
 
-            if len(mini_batch_data) < self.train_batch_size:
-                amount_records_needed = self.train_batch_size - len(mini_batch_data)
-                data_loader = self.collected_dataset.get_trainset(amount_records_needed)
-                if data_loader is not None:
-                    iter_data_loader = iter(data_loader)
-                    extra_records = next(iter_data_loader)
-                    mini_batch_data = torch.cat(
-                        (mini_batch_data, extra_records[0]), dim=0
-                    )
-                    mini_batch_target = torch.cat(
-                        (mini_batch_target, extra_records[1]), dim=0
-                    )
+            # if len(mini_batch_data) < self.train_batch_size:
+            #     amount_records_needed = self.train_batch_size - len(mini_batch_data)
+            #     data_loader = self.collected_dataset.get_trainset(amount_records_needed)
+            #     if data_loader is not None:
+            #         iter_data_loader = iter(data_loader)
+            #         extra_records = next(iter_data_loader)
+            #         mini_batch_data = torch.cat(
+            #             (mini_batch_data, extra_records[0]), dim=0
+            #         )
+            #         mini_batch_target = torch.cat(
+            #             (mini_batch_target, extra_records[1]), dim=0
+            #         )
             self.mini_batches.append(
                 {"data": mini_batch_data, "target": mini_batch_target}
             )
