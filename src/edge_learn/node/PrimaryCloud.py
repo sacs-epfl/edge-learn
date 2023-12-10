@@ -62,7 +62,33 @@ class PrimaryCloud(Node):
 
     def runOnlyData(self):
         self.initialise_run()
-        for iteration in range(self.iterations):
+        iteration = 0
+        while True:
+            iteration += 1
+            self.test()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                file_path = os.path.join(
+                    self.log_dir, "{}_results.json".format(self.rank)
+                )
+                if os.path.exists(file_path):
+                    with open(
+                        file_path,
+                        "r",
+                    ) as inf:
+                        results_dict = json.load(inf)
+                else:
+                    results_dict = {
+                        "train_loss": {},
+                        "test_loss": {},
+                        "test_acc": {},
+                        "bytes_sent_to_each_edge": {},
+                        "total_elapsed_time": {},
+                        "total_meta": {},
+                        "total_data_per_n": {},
+                    }
+                if self.test_acc != None:
+                    results_dict["test_acc"][self.iteration] = self.test_acc
+                break
             self.test()
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
@@ -78,7 +104,33 @@ class PrimaryCloud(Node):
 
     def runBaseline(self):
         self.initialise_run()
-        for iteration in range(self.iterations):
+        iteration = 0
+        while True:
+            iteration += 1
+            self.test()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                file_path = os.path.join(
+                    self.log_dir, "{}_results.json".format(self.rank)
+                )
+                if os.path.exists(file_path):
+                    with open(
+                        file_path,
+                        "r",
+                    ) as inf:
+                        results_dict = json.load(inf)
+                else:
+                    results_dict = {
+                        "train_loss": {},
+                        "test_loss": {},
+                        "test_acc": {},
+                        "bytes_sent_to_each_edge": {},
+                        "total_elapsed_time": {},
+                        "total_meta": {},
+                        "total_data_per_n": {},
+                    }
+                if self.test_acc != None:
+                    results_dict["test_acc"][self.iteration] = self.test_acc
+                break
             self.test()
             self.initialize_iteration(iteration)
             self.get_batch_from_dataset()
@@ -259,26 +311,22 @@ class PrimaryCloud(Node):
             LearningMode(self.learning_mode) == LearningMode.ONLY_DATA
             or LearningMode(self.learning_mode) == LearningMode.BASELINE
         ):
-            results_dict["train_loss"][self.iteration + 1] = self.loss_amt
+            results_dict["train_loss"][self.iteration] = self.loss_amt
         if self.test_loss != None:
             results_dict["test_loss"][self.iteration] = self.test_loss
         if self.test_acc != None:
             results_dict["test_acc"][self.iteration] = self.test_acc
 
         results_dict["bytes_sent_to_each_edge"][
-            self.iteration + 1
+            self.iteration
         ] = self.amt_bytes_sent_to_edge
-        results_dict["total_elapsed_time"][self.iteration + 1] = (
-            cur_time - self.start_time
-        )
+        results_dict["total_elapsed_time"][self.iteration] = cur_time - self.start_time
 
         if hasattr(self.communication, "total_meta"):
-            results_dict["total_meta"][
-                self.iteration + 1
-            ] = self.communication.total_meta
+            results_dict["total_meta"][self.iteration] = self.communication.total_meta
         if hasattr(self.communication, "total_data"):
             results_dict["total_data_per_n"][
-                self.iteration + 1
+                self.iteration
             ] = self.communication.total_data
 
         with open(
