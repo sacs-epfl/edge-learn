@@ -51,6 +51,7 @@ class Client(Node):
     def initialize_run(self):
         self.trainset = self.dataset.get_trainset(self.batch_size_to_send, True)
         self.dataiter = iter(self.trainset)
+        self.epoch_confirmation = False
 
     def get_model_from_edge_server(self):
         sender, data = self.receive_channel("MODEL")

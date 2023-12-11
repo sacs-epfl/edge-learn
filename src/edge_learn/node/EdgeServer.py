@@ -74,6 +74,7 @@ class EdgeServer(Node):
 
     def initialize_run(self):
         self.peer_deques = dict()
+        self.epoch_confirmations = 0
 
     def get_model_from_primary_cloud(self):
         sender, data = self.receive_channel("MODEL")
