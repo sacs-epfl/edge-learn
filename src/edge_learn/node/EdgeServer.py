@@ -108,6 +108,9 @@ class EdgeServer(Node):
         to_send["iteration"] = self.iteration
         to_send["CHANNEL"] = "DATA"
         to_send["STATUS"] = "OK"
+        if self.epoch_confirmations == self.num_children:
+            to_send["epoch"] = True
+            self.epoch_confirmations = 0
 
         before = self.communication.total_bytes
         self.communication.send(self.parents[0], to_send)
@@ -123,6 +126,8 @@ class EdgeServer(Node):
 
             if data["iteration"] == self.iteration:
                 self.batches_received[sender].appendleft(data)
+                if data["epoch"]:
+                    self.epoch_confirmations += 1
             else:
                 self.batches_received[sender].append(data)
         logging.info("Received data from all clients")
@@ -160,8 +165,6 @@ class EdgeServer(Node):
 
     def create_batch_and_cache(self):
         self.create_batch()
-        # if len(self.received_batch["data"]) != 0:
-        #     self.collected_dataset.add_batch(self.received_batch)
 
     def create_batch(self):
         batch_data = []
@@ -188,73 +191,17 @@ class EdgeServer(Node):
         for i in range(0, total_size, self.train_batch_size):
             mini_batch_data = batch_data[i : i + self.train_batch_size]
             mini_batch_target = batch_target[i : i + self.train_batch_size]
-
-            # if len(mini_batch_data) < self.train_batch_size:
-            #     amount_records_needed = self.train_batch_size - len(mini_batch_data)
-            #     data_loader = self.collected_dataset.get_trainset(amount_records_needed)
-            #     if data_loader is not None:
-            #         iter_data_loader = iter(data_loader)
-            #         extra_records = next(iter_data_loader)
-            #         mini_batch_data = torch.cat(
-            #             (mini_batch_data, extra_records[0]), dim=0
-            #         )
-            #         mini_batch_target = torch.cat(
-            #             (mini_batch_target, extra_records[1]), dim=0
-            #         )
             self.mini_batches.append(
                 {"data": mini_batch_data, "target": mini_batch_target}
             )
 
         logging.info("Created mini-batches from received batch data")
 
-        # mini_batch = []
-        # while mini_batch.__len__() != 0:
-        #     mini_batch.append(batch.remove(0))
-        #     if mini_batch.__len__() == self.train_batch_size:
-        #         self.mini_batches.append(mini_batch)
-        #         mini_batch = []
-        #     if mini_batch.__len__() != 0:
-        #         amount_records_needed = self.train_batch_size - mini_batch.__len__()
-        #         data_loader = self.collected_dataset.get_trainset(amount_records_needed)
-        #         if data_loader is not None:
-        #             iter_data_loader = iter(data_loader)
-        #             extra_records = next(iter_data_loader)
-        #             logging.info(
-        #                 "Amount of extra records taken: {}".format(extra_records[0].shape)
-        #             )
-        #             mini_batch["data"] = torch.cat(
-        #                 mini_batch["data"], extra_records["data"]
-        #             )
-        #             mini_batch["target"] = torch.cat(
-        #                 mini_batch["target"], extra_records["target"]
-        #             )
-
-    # def fill_batch_till_target(self):
-    #     self.batch = dict()
-    #     current_batch_size = self.received_batch["data"].shape[0]
-    #     amountRecordsNeeded = self.train_batch_size - current_batch_size
-    #     if amountRecordsNeeded < 0:
-    #         self.batch = self.received_batch
-    #         return
-    #     data_loader = self.collected_dataset.get_trainset(amountRecordsNeeded)
-    #     if data_loader is not None:
-    #         iter_data_loader = iter(data_loader)
-    #         relooked_batch = next(iter_data_loader)
-    #         logging.info("Type of data relooked: %s", relooked_batch[0].dtype)
-    #         logging.debug("Relooked batch size: {}".format(relooked_batch[0].shape))
-    #         self.batch["data"] = torch.cat(
-    #             (self.received_batch["data"], relooked_batch[0])
-    #         )
-    #         self.batch["target"] = torch.cat(
-    #             (self.received_batch["target"], relooked_batch[1])
-    #         )
-    #     else:
-    #         self.batch = self.received_batch
-
     def train(self):
         logging.info("Starting training phase")
-        if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
+        if self.epoch_confirmations == self.num_children:
             self.lr_scheduler.step()
+            self.epoch_confirmations = 0
 
         losses = []
         for mini_batch in self.mini_batches:
@@ -489,6 +436,7 @@ class EdgeServer(Node):
         self.uid = self.mapping.get_uid(self.rank, self.machine_id)
         self.parents = self.mapping.get_parents(self.uid)
         self.children = self.mapping.get_children(self.uid)
+        self.num_children = len(self.children)
         self.log_dir = log_dir
         self.weights_store_dir = weights_store_dir
         self.sent_disconnections = False

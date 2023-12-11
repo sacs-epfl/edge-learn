@@ -83,12 +83,10 @@ class Client(Node):
                 self.last_dtype_target = target.dtype
                 logging.info("Last dtype target: %s", self.last_dtype_target)
             to_send["params"] = (data, target)
-
-            # to_send["params"] = (
-            #     torch.tensor([], dtype=self.last_dtype_data),
-            #     torch.tensor([], dtype=self.last_dtype_target),
-            # )
             to_send["STATUS"] = "OK"
+            if self.epoch_confirmation:
+                to_send["epoch"] = True
+                self.epoch_confirmation = False
 
             before = self.communication.total_bytes
             self.communication.send(self.parents[0], to_send)
@@ -96,6 +94,7 @@ class Client(Node):
 
         except StopIteration:
             logging.debug("Ran out of data, recreating iterable")
+            self.epoch_confirmation = True
             self.dataiter = iter(self.trainset)
             self.send_batch_to_edge_server()
 
@@ -111,12 +110,14 @@ class Client(Node):
         self.amt_bytes_sent_to_edge = self.communication.total_bytes - before
 
     def train(self):
-        if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
+        if self.epoch_confirmation:
             self.lr_scheduler.step()
+            self.epoch_confirmation = False
         data, target = None, None
         try:
             data, target = next(self.dataiter)
         except StopIteration:
+            self.epoch_confirmation = True
             self.dataiter = iter(self.trainset)
             data, target = next(self.dataiter)
         self.loss_amt = self.trainer.trainstep(data, target.long())

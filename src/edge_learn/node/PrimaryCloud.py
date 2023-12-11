@@ -167,6 +167,7 @@ class PrimaryCloud(Node):
         try:
             data, target = next(self.dataiter)
         except StopIteration:
+            self.epoch_confirmation = True
             self.dataiter = iter(self.trainset)
             data, target = next(self.dataiter)
         self.batch = dict()
@@ -210,6 +211,11 @@ class PrimaryCloud(Node):
 
             if data["iteration"] == self.iteration:
                 self.batches_received[sender].appendleft(data)
+                if data["epoch"]:
+                    self.epoch_confirmations += 1
+                    if self.epoch_confirmations == self.num_children:
+                        self.epoch_confirmation = True
+                        self.epoch_confirmations = 0
             else:
                 self.batches_received[sender].append(data)
         logging.info("Received data from all clients")
@@ -276,8 +282,9 @@ class PrimaryCloud(Node):
             self.batch = self.received_batch
 
     def train(self):
-        if self.iteration % self.lr_scheduler_frequency == 0 and self.iteration != 0:
+        if self.epoch_confirmation:
             self.lr_scheduler.step()
+            self.epoch_confirmation = False
         self.loss_amt = self.trainer.trainstep(
             self.batch["data"], self.batch["target"].long()
         )
