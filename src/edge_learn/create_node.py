@@ -74,13 +74,27 @@ def create_node(node_type, rank, config_dir):
         return
 
 
+def convert_value(value):
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
+
 def read_ini(file_path):
     config = RawConfigParser()
     config.optionxform = str
     config.read(file_path)
-    parsed_config = dict()
+
+    parsed_config = {}
     for section in config:
-        parsed_config[section] = dict(config.items(section))
+        parsed_config[section] = {}
+        for key, value in config.items(section):
+            parsed_config[section][key] = convert_value(value)
+
     print(parsed_config)
     return parsed_config
 
