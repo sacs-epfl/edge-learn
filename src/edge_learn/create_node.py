@@ -1,5 +1,5 @@
 import argparse
-from localconfig import LocalConfig
+from configparser import RawConfigParser
 import json
 import logging
 
@@ -75,7 +75,9 @@ def create_node(node_type, rank, config_dir):
 
 
 def read_ini(file_path):
-    config = LocalConfig(file_path)
+    config = RawConfigParser()
+    config.optionxform = str
+    config.read(file_path)
     parsed_config = dict()
     for section in config:
         parsed_config[section] = dict(config.items(section))
