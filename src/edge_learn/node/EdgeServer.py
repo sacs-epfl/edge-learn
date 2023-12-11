@@ -109,6 +109,7 @@ class EdgeServer(Node):
         to_send["CHANNEL"] = "DATA"
         to_send["STATUS"] = "OK"
         if self.epoch_confirmations == self.num_children:
+            logging.debug("Sending epoch notification to cloud")
             to_send["epoch"] = True
             self.epoch_confirmations = 0
 
@@ -200,6 +201,7 @@ class EdgeServer(Node):
     def train(self):
         logging.info("Starting training phase")
         if self.epoch_confirmations == self.num_children:
+            logging.info("Learning rate scheduler taking a step")
             self.lr_scheduler.step()
             self.epoch_confirmations = 0
 

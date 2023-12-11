@@ -85,6 +85,7 @@ class Client(Node):
             to_send["params"] = (data, target)
             to_send["STATUS"] = "OK"
             if self.epoch_confirmation:
+                logging.debug("Sending epoch notification to edge")
                 to_send["epoch"] = True
                 self.epoch_confirmation = False
 
@@ -111,6 +112,7 @@ class Client(Node):
 
     def train(self):
         if self.epoch_confirmation:
+            logging.info("Learning rate scheduler taking a step")
             self.lr_scheduler.step()
             self.epoch_confirmation = False
         data, target = None, None

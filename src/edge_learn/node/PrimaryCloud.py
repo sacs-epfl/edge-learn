@@ -283,6 +283,7 @@ class PrimaryCloud(Node):
 
     def train(self):
         if self.epoch_confirmation:
+            logging.info("Learning rate scheduler taking a step")
             self.lr_scheduler.step()
             self.epoch_confirmation = False
         self.loss_amt = self.trainer.trainstep(
