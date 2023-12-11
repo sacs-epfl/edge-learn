@@ -1,4 +1,5 @@
 """Lamb optimizer."""
+"""https://github.com/skyday123/pytorch-lamb/blob/master/pytorch_lamb/lamb.py"""
 
 import collections
 import math
