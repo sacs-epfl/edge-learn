@@ -357,9 +357,8 @@ class Client(Node):
         scheduler_class = getattr(
             scheduler_module, scheduler_configs["scheduler_class"]
         )
-        self.lr_scheduler_frequency = scheduler_configs["frequency"]
         scheduler_params = utils.remove_keys(
-            scheduler_configs, ["scheduler_package", "scheduler_class", "frequency"]
+            scheduler_configs, ["scheduler_package", "scheduler_class"]
         )
         self.lr_scheduler = scheduler_class(self.optimizer, **scheduler_params)
 
