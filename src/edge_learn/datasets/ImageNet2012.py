@@ -97,7 +97,7 @@ class ImageNet2012(Dataset):
         i: int = 0
         for _, label in self.dataset:
             i += 1
-            print(f"label for i {i} is {label}")
+            logging.info(f"label for i {i} is {label}")
             if i == 100:
                 exit(0)
 
