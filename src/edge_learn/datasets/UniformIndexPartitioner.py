@@ -19,8 +19,8 @@ class UniformIndexPartitioner:
                 if i == 0:
                     start_idx = class_start_idx
                 else:
-                    start_idx = class_start_idx + int(class_split * sizes[:i])
-                end_idx = class_start_idx + int(class_split * sizes[: i + 1])
+                    start_idx = class_start_idx + int(class_split * sum(sizes[:i]))
+                end_idx = class_start_idx + int(class_split * sum(sizes[: i + 1]))
                 self.partitions[i].extend(range(start_idx, end_idx))
 
     def use(self, duid: int):
