@@ -83,6 +83,8 @@ class ImageNet2012(Dataset):
 
     def load_trainset(self):
         logging.info("Starting to load the trainset...")
+        # trainset is ordered by class so first is all the images of class 0 then class 1 until class 1000
+        # roughly 1
         trainset = torchvision.datasets.ImageNet(
             root=self.train_dir, split="train", transform=self.transform
         )
@@ -98,7 +100,7 @@ class ImageNet2012(Dataset):
         for _, label in trainset:
             i += 1
             logging.info(f"label for i {i} is {label}")
-            if i == 2500:
+            if i == 3000:
                 exit(0)
 
         c_len = len(trainset)
