@@ -88,11 +88,11 @@ class ImageNet2012(Dataset):
         )
         logging.info("Full trainset loaded.")
 
-        data = []
-        labels = []
-        for img, label in trainset:
-            data.append(img)
-            labels.append(label)
+        # data = []
+        # labels = []
+        # for img, label in trainset:
+        #     data.append(img)
+        #     labels.append(label)
 
         c_len = len(trainset)
 
@@ -106,9 +106,7 @@ class ImageNet2012(Dataset):
         my_duid = self.mapping.get_duid_from_uid(
             self.mapping.get_uid(self.rank, self.machine_id)
         )
-        self.trainset = StratesfiedPartitioner(
-            trainset.data, trainset.labels, sizes=self.sizes
-        ).use(my_duid)
+        self.trainset = StratesfiedPartitioner(trainset, sizes=self.sizes).use(my_duid)
 
         logging.debug(f"Dataset partition size: {self.sizes[my_duid]}")
 
@@ -132,24 +130,6 @@ class ImageNet2012(Dataset):
         )
         logging.info("Full testset loaded.")
         self.testset = full_testset
-
-        # # Group image indices by category
-        # category_indices = {}
-        # for idx, (_, label) in enumerate(full_testset.imgs):
-        #     if label < NUM_CLASSES:
-        #         if label not in category_indices:
-        #             category_indices[label] = []
-        #         category_indices[label].append(idx)
-        # logging.info("Grouped image indices by category.")
-
-        # # Select up to TEST_IMAGES_PER_CATEGORY images from each of the first NUM_CLASSES categories
-        # selected_indices = []
-        # for indices in category_indices.values():
-        #     selected_indices.extend(indices[:TEST_IMAGES_PER_CATEGORY])
-
-        # logging.info(f"Number of elements in testing dataset: {len(selected_indices)}")
-
-        # self.testset = torch.utils.data.Subset(full_testset, selected_indices)
 
     def get_trainset(self, batch_size=8, shuffle=True):
         if self.__training__:
