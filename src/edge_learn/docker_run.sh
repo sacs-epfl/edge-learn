@@ -18,7 +18,7 @@ create_primary_cloud() {
     local base_result_dir=$1
     mkdir -p $base_result_dir/primary_cloud
     echo "Running primary cloud"
-    docker run $(get_gpu_flag) -d -p $cloud_port:1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=8g --name primary_cloud-$machine_id edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config
+    docker run $(get_gpu_flag) -d -p $cloud_port:1000 -v $base_result_dir/primary_cloud:/results -v $2:/edge_learn -v $3:/decentralizepy -v $4:/data --shm-size=32g --name primary_cloud-$machine_id edge_learn:latest python3 create_node.py --node_type cloud --rank -1 --config_dir config
 }
 
 is_primary_cloud() {
