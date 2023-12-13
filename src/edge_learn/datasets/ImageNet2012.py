@@ -15,7 +15,7 @@ from decentralizepy.models.Model import Model
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.datasets.Partitioner import DataPartitioner
 from edge_learn.enums.LearningMode import LearningMode
-from edge_learn.datasets.StratesfiedPartitioner import StratesfiedPartitioner
+from edge_learn.datasets.UniformIndexPartitioner import UniformIndexPartitioner
 
 NUM_CLASSES = 1000
 # MAX is 50
@@ -84,24 +84,11 @@ class ImageNet2012(Dataset):
     def load_trainset(self):
         logging.info("Starting to load the trainset...")
         # trainset is ordered by class so first is all the images of class 0 then class 1 until class 1000
-        # roughly 1
+        # roughly 1300 images per category should probably make a breakdown at some point
         trainset = torchvision.datasets.ImageNet(
             root=self.train_dir, split="train", transform=self.transform
         )
         logging.info("Full trainset loaded.")
-
-        # data = []
-        # labels = []
-        # for img, label in trainset:
-        #     data.append(img)
-        #     labels.append(label)
-
-        i: int = 0
-        for _, label in trainset:
-            i += 1
-            logging.info(f"label for i {i} is {label}")
-            if i == 5000:
-                exit(0)
 
         c_len = len(trainset)
 
@@ -115,7 +102,7 @@ class ImageNet2012(Dataset):
         my_duid = self.mapping.get_duid_from_uid(
             self.mapping.get_uid(self.rank, self.machine_id)
         )
-        self.trainset = StratesfiedPartitioner(
+        self.trainset = UniformIndexPartitioner(
             trainset, sizes=self.sizes, num_classes=NUM_CLASSES
         ).use(my_duid)
 
