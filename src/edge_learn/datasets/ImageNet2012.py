@@ -136,6 +136,7 @@ class ImageNet2012(Dataset):
                 batch_size=batch_size,
                 shuffle=shuffle,
                 num_workers=num_workers,
+                pin_memory=True,
             )
         raise RuntimeError("Train set not initialised!")
 
