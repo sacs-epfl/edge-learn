@@ -94,6 +94,13 @@ class ImageNet2012(Dataset):
         #     data.append(img)
         #     labels.append(label)
 
+        i: int = 0
+        for _, label in self.dataset:
+            i += 1
+            print(f"label for i {i} is {label}")
+            if i == 100:
+                exit(0)
+
         c_len = len(trainset)
 
         if self.sizes == None:
@@ -106,7 +113,9 @@ class ImageNet2012(Dataset):
         my_duid = self.mapping.get_duid_from_uid(
             self.mapping.get_uid(self.rank, self.machine_id)
         )
-        self.trainset = StratesfiedPartitioner(trainset, sizes=self.sizes).use(my_duid)
+        self.trainset = StratesfiedPartitioner(
+            trainset, sizes=self.sizes, num_classes=NUM_CLASSES
+        ).use(my_duid)
 
         logging.debug(f"Dataset partition size: {self.sizes[my_duid]}")
 

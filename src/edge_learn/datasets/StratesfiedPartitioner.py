@@ -9,7 +9,10 @@ class StratesfiedPartitioner:
     Class partition data in i.i.d
     """
 
-    def __init__(self, dataset, sizes=[1.0], seed=1234):
+    def __init__(self, dataset, sizes=[1.0], seed=1234, num_classes=100):
+        class_split = len(dataset) // num_classes
+        class_start_idxs = [class_split * i for i in range(0, num_classes)]
+
         self.dataset = dataset
         labels = self.get_all_labels()
 
