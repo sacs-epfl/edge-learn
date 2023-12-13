@@ -31,14 +31,27 @@ class EdgeServer(Node):
             self.initialize_run()
             while self.connected_to_primary_cloud:
                 time_start_round = perf_counter()
+                time_start = perf_counter()
                 self.get_model_from_primary_cloud()
+                time_end = perf_counter()
+                logging.info(
+                    f"TIME SPENT WAITING FOR MODEL FROM CLOUD {time_end - time_start}"
+                )
+                time_start = perf_counter()
                 self.send_model_to_clients()
+                time_end = perf_counter()
+                logging.info(
+                    f"TIME SPENT SENDING MODEL TO EDGE {time_end - time_start}"
+                )
                 time_start = perf_counter()
                 self.get_data_from_clients()
                 time_end = perf_counter()
-                logging.info(f"TIME SPENT WAITING FOR BATCH {time_start - time_end}")
+                logging.info(f"TIME SPENT WAITING FOR BATCH {time_end - time_start}")
+                time_start = perf_counter()
                 self.create_batch_and_cache()
                 self.create_mini_batches()
+                time_end = perf_counter()
+                logging.info(f"TIME SPENT BATCHING {time_end - time_start}")
                 self.train()
                 self.send_model_to_primary_cloud()
                 self.collect_stats()
