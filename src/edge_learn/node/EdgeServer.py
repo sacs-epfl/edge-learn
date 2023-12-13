@@ -5,6 +5,7 @@ import os
 import json
 import importlib
 from ast import literal_eval
+from time import perf_counter
 
 from decentralizepy.node.Node import Node
 from decentralizepy import utils
@@ -29,14 +30,20 @@ class EdgeServer(Node):
         try:
             self.initialize_run()
             while self.connected_to_primary_cloud:
+                time_start_round = perf_counter()
                 self.get_model_from_primary_cloud()
                 self.send_model_to_clients()
+                time_start = perf_counter()
                 self.get_data_from_clients()
+                time_end = perf_counter()
+                logging.info(f"TIME SPENT WAITING FOR BATCH {time_start - time_end}")
                 self.create_batch_and_cache()
                 self.create_mini_batches()
                 self.train()
                 self.send_model_to_primary_cloud()
                 self.collect_stats()
+                time_end_round = perf_counter()
+                logging.info(f"TIME FOR ROUND {time_end_round - time_start_round}")
         except self.DisconnectedException:
             pass
         finally:
