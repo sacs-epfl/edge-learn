@@ -41,7 +41,7 @@ class EdgeServer(Node):
                 self.send_model_to_clients()
                 time_end = perf_counter()
                 logging.info(
-                    f"TIME SPENT SENDING MODEL TO EDGE {time_end - time_start}"
+                    f"TIME SPENT SENDING MODEL TO CLIENT {time_end - time_start}"
                 )
                 time_start = perf_counter()
                 self.get_data_from_clients()

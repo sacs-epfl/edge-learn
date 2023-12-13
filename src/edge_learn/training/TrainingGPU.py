@@ -47,6 +47,7 @@ class Training:
 
     # Assuming self.model is already wrapped with DataParallel
     def trainstep(self, data, target):
+        time_step_start = perf_counter()
         self.model.train()
         self.optimizer.zero_grad()
         time_forward_start = perf_counter()
@@ -63,9 +64,10 @@ class Training:
         time_optimizer_start = perf_counter()
         self.optimizer.step()
         time_optimizer_end = perf_counter()
+        time_step_end = perf_counter()
 
         logging.info(
-            f"TRAINING BREAKDOWN\nForward pass {time_forward_end - time_forward_start}\nLoss calc {time_loss_end - time_loss_start}\nBackward pass {time_backward_end - time_backward_start}\nOptimizer step {time_optimizer_end - time_optimizer_start}"
+            f"TRAINING BREAKDOWN\nForward pass {time_forward_end - time_forward_start}\nLoss calc {time_loss_end - time_loss_start}\nBackward pass {time_backward_end - time_backward_start}\nOptimizer step {time_optimizer_end - time_optimizer_start}\nEntire Training Step {time_step_end - time_step_start}"
         )
         return loss_val.item()
 
