@@ -135,7 +135,7 @@ class EdgeServer(Node):
 
             if data["iteration"] == self.iteration:
                 self.batches_received[sender].appendleft(data)
-                if data["epoch"]:
+                if "epoch" in data and data["epoch"]:
                     self.epoch_confirmations += 1
             else:
                 self.batches_received[sender].append(data)

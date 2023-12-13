@@ -153,7 +153,7 @@ class PrimaryCloud(Node):
 
             if data["iteration"] == self.iteration:
                 self.batches_received[sender].appendleft(data)
-                if data["epoch"]:
+                if "epoch" in data and data["epoch"]:
                     self.epoch_confirmations += 1
                     if self.epoch_confirmations == self.num_children:
                         self.epoch_confirmation = True
