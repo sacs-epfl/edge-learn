@@ -29,35 +29,14 @@ class PrimaryCloud(Node):
         iteration = 0
         while True:
             iteration += 1
-            self.test()
-            if self.test_acc != None and self.test_acc > self.target_acc:
-                file_path = os.path.join(
-                    self.log_dir, "{}_results.json".format(self.rank)
-                )
-                if os.path.exists(file_path):
-                    with open(
-                        file_path,
-                        "r",
-                    ) as inf:
-                        results_dict = json.load(inf)
-                else:
-                    results_dict = {
-                        "train_loss": {},
-                        "test_loss": {},
-                        "test_acc": {},
-                        "bytes_sent_to_each_edge": {},
-                        "total_elapsed_time": {},
-                        "total_meta": {},
-                        "total_data_per_n": {},
-                    }
-                if self.test_acc != None:
-                    results_dict["test_acc"][self.iteration] = self.test_acc
-                break
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
             self.get_model_from_edge_servers_and_store_in_peer_deque()
             self.average_model_from_peer_deques()
+            self.test()
             self.collect_stats()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                break
         self.finalize_run()
 
     def runOnlyData(self):
@@ -65,38 +44,16 @@ class PrimaryCloud(Node):
         iteration = 0
         while True:
             iteration += 1
-            self.test()
-            if self.test_acc != None and self.test_acc > self.target_acc:
-                file_path = os.path.join(
-                    self.log_dir, "{}_results.json".format(self.rank)
-                )
-                if os.path.exists(file_path):
-                    with open(
-                        file_path,
-                        "r",
-                    ) as inf:
-                        results_dict = json.load(inf)
-                else:
-                    results_dict = {
-                        "train_loss": {},
-                        "test_loss": {},
-                        "test_acc": {},
-                        "bytes_sent_to_each_edge": {},
-                        "total_elapsed_time": {},
-                        "total_meta": {},
-                        "total_data_per_n": {},
-                    }
-                if self.test_acc != None:
-                    results_dict["test_acc"][self.iteration] = self.test_acc
-                break
-            self.test()
             self.initialize_iteration(iteration)
             self.send_model_to_edge_servers()
             self.get_data_from_edge_servers()
             self.create_batch_and_cache()
             self.fill_batch_till_target()
             self.train()
+            self.test()
             self.collect_stats()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                break
         self.finalize_run()
 
     def runOnlyWeights(self):
@@ -107,36 +64,14 @@ class PrimaryCloud(Node):
         iteration = 0
         while True:
             iteration += 1
-            self.test()
-            if self.test_acc != None and self.test_acc > self.target_acc:
-                file_path = os.path.join(
-                    self.log_dir, "{}_results.json".format(self.rank)
-                )
-                if os.path.exists(file_path):
-                    with open(
-                        file_path,
-                        "r",
-                    ) as inf:
-                        results_dict = json.load(inf)
-                else:
-                    results_dict = {
-                        "train_loss": {},
-                        "test_loss": {},
-                        "test_acc": {},
-                        "bytes_sent_to_each_edge": {},
-                        "total_elapsed_time": {},
-                        "total_meta": {},
-                        "total_data_per_n": {},
-                    }
-                if self.test_acc != None:
-                    results_dict["test_acc"][self.iteration] = self.test_acc
-                break
-            self.test()
             self.initialize_iteration(iteration)
             self.get_batch_from_dataset()
             self.train()
             self.amt_bytes_sent_to_edge = 0
+            self.test()
             self.collect_stats()
+            if self.test_acc != None and self.test_acc > self.target_acc:
+                break
         self.finalize_run()
 
     def initialise_run(self):
