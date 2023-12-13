@@ -144,7 +144,9 @@ class PrimaryCloud(Node):
         self.epoch_confirmation = False
         self.epoch_confirmations = 0
         if LearningMode(self.learning_mode) == LearningMode.BASELINE:
-            self.trainset = self.dataset.get_trainset(self.train_batch_size, True)
+            self.trainset = self.dataset.get_trainset(
+                self.train_batch_size, shuffle=True
+            )
             self.dataiter = iter(self.trainset)
 
     def initialize_iteration(self, iteration: int):

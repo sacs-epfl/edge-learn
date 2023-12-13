@@ -15,6 +15,7 @@ from decentralizepy.models.Model import Model
 from edge_learn.mappings.EdgeMapping import EdgeMapping
 from decentralizepy.datasets.Partitioner import DataPartitioner
 from edge_learn.enums.LearningMode import LearningMode
+from edge_learn.datasets.StratesfiedPartitioner import StratesfiedPartitioner
 
 NUM_CLASSES = 1000
 # MAX is 50
@@ -87,14 +88,11 @@ class ImageNet2012(Dataset):
         )
         logging.info("Full trainset loaded.")
 
-        # # Filter the dataset to include only the first `NUM_CLASSES` classes
-        # indices = [
-        #     idx
-        #     for idx, (_, target) in enumerate(trainset.samples)
-        #     if target < NUM_CLASSES
-        # ]
-        # logging.info(f"Number of elements in training dataset: {len(indices)}")
-        # trainset = torch.utils.data.Subset(trainset, indices)
+        data = []
+        labels = []
+        for img, label in trainset:
+            data.append(img)
+            labels.append(label)
 
         c_len = len(trainset)
 
@@ -105,13 +103,21 @@ class ImageNet2012(Dataset):
             self.sizes[-1] += 1.0 - sum(self.sizes)  # Give the last one the rest
             logging.debug("Size fractions: {}".format(self.sizes))
 
-        self.trainset = DataPartitioner(
-            trainset, sizes=self.sizes, seed=self.random_seed
+        self.trainset = StratesfiedPartitioner(
+            trainset.data, trainset.labels, sizes=self.sizes
         ).use(
             self.mapping.get_duid_from_uid(
                 self.mapping.get_uid(self.rank, self.machine_id)
             )
         )
+
+        # self.trainset = DataPartitioner(
+        #     trainset, sizes=self.sizes, seed=self.random_seed
+        # ).use(
+        #     self.mapping.get_duid_from_uid(
+        #         self.mapping.get_uid(self.rank, self.machine_id)
+        #     )
+        # )
 
     def load_testset(self):
         logging.info("Starting to load the testset...")
