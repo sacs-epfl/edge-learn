@@ -102,6 +102,7 @@ class PrimaryCloud(Node):
             self.test_loss = tl
 
     def get_batch_from_dataset(self):
+        start_time = perf_counter()
         data, target = None, None
         try:
             data, target = next(self.dataiter)
@@ -112,6 +113,8 @@ class PrimaryCloud(Node):
         self.batch = dict()
         self.batch["data"] = data
         self.batch["target"] = target
+        end_time = perf_counter()
+        logging.info(f"TIME SPENT LOADING BATCH FROM DATASET: {end_time - start_time}")
 
     def send_model_to_edge_servers(self):
         to_send = dict()
@@ -342,7 +345,7 @@ class PrimaryCloud(Node):
         train_batch_size=32,
         learning_mode="H",
         num_threads=1,
-        *args
+        *args,
     ):
         self.instantiate(
             rank,
@@ -357,7 +360,7 @@ class PrimaryCloud(Node):
             train_batch_size,
             learning_mode,
             num_threads,
-            *args
+            *args,
         )
 
         if LearningMode(self.learning_mode) == LearningMode.HYBRID:
@@ -474,7 +477,7 @@ class PrimaryCloud(Node):
             LearningMode(self.learning_mode),
             train=train_val,
             test=True,
-            **self.dataset_params
+            **self.dataset_params,
         )
         logging.info("Dataset instantiation complete.")
         self.model_class = getattr(dataset_module, dataset_configs["model_class"])

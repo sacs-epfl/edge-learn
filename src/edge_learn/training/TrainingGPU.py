@@ -5,6 +5,8 @@ import json
 import copy
 from torch.nn import DataParallel
 
+from time import perf_counter
+
 from decentralizepy import utils
 
 
@@ -47,12 +49,24 @@ class Training:
     def trainstep(self, data, target):
         self.model.train()
         self.optimizer.zero_grad()
+        time_forward_start = perf_counter()
         output = self.model(data)  # data can be on CPU
+        time_forward_end = perf_counter()
+        time_loss_start = perf_counter()
         loss_val = self.loss(
             output, target.to(output.device)
         )  # Move target to the same device as output
+        time_loss_end = perf_counter()
+        time_backward_start = perf_counter()
         loss_val.backward()
+        time_backward_end = perf_counter()
+        time_optimizer_start = perf_counter()
         self.optimizer.step()
+        time_optimizer_end = perf_counter()
+
+        logging.info(
+            f"TRAINING BREAKDOWN\nForward pass {time_forward_end - time_forward_start}\nLoss calc {time_loss_end - time_loss_start}\nBackward pass {time_backward_end - time_backward_start}\nOptimizer step {time_optimizer_end - time_optimizer_start}"
+        )
         return loss_val.item()
 
     def eval_loss(self, dataset):
