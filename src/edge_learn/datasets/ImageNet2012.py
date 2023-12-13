@@ -95,7 +95,7 @@ class ImageNet2012(Dataset):
         #     labels.append(label)
 
         i: int = 0
-        for _, label in self.dataset:
+        for _, label in trainset:
             i += 1
             logging.info(f"label for i {i} is {label}")
             if i == 100:
