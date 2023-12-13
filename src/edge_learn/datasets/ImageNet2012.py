@@ -100,7 +100,7 @@ class ImageNet2012(Dataset):
         for _, label in trainset:
             i += 1
             logging.info(f"label for i {i} is {label}")
-            if i == 3000:
+            if i == 5000:
                 exit(0)
 
         c_len = len(trainset)
