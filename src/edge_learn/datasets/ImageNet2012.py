@@ -103,21 +103,14 @@ class ImageNet2012(Dataset):
             self.sizes[-1] += 1.0 - sum(self.sizes)  # Give the last one the rest
             logging.debug("Size fractions: {}".format(self.sizes))
 
+        my_duid = self.mapping.get_duid_from_uid(
+            self.mapping.get_uid(self.rank, self.machine_id)
+        )
         self.trainset = StratesfiedPartitioner(
             trainset.data, trainset.labels, sizes=self.sizes
-        ).use(
-            self.mapping.get_duid_from_uid(
-                self.mapping.get_uid(self.rank, self.machine_id)
-            )
-        )
+        ).use(my_duid)
 
-        # self.trainset = DataPartitioner(
-        #     trainset, sizes=self.sizes, seed=self.random_seed
-        # ).use(
-        #     self.mapping.get_duid_from_uid(
-        #         self.mapping.get_uid(self.rank, self.machine_id)
-        #     )
-        # )
+        logging.debug(f"Dataset partition size: {self.sizes[my_duid]}")
 
     def load_testset(self):
         logging.info("Starting to load the testset...")
