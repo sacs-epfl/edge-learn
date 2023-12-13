@@ -43,6 +43,7 @@ def create_node(node_type, rank, config_dir):
             params["train_batch_size"],
             params["learning_mode"],
             params["num_threads_cloud"],
+            params["num_worker_threads"],
         )
     elif node_type == "edge":
         EdgeServer.create(

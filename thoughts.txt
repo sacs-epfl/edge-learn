@@ -1,0 +1,7 @@
+Cloud probably slower because of I/O bottleneck
+
+If I have 8 clients each with its own DataLoader then
+it is quicker then having the cloud with 1 DataLoader.
+I did an experiment of measuring the time and the time 
+ for getting 256 in the cloud was 1.6 but when doing
+ hybrid it takes 3.4 but to get 512

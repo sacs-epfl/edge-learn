@@ -80,7 +80,9 @@ class PrimaryCloud(Node):
         self.epoch_confirmations = 0
         if LearningMode(self.learning_mode) == LearningMode.BASELINE:
             self.trainset = self.dataset.get_trainset(
-                batch_size=self.train_batch_size, shuffle=True
+                batch_size=self.train_batch_size,
+                shuffle=True,
+                num_workers=self.num_data_workers,
             )
             self.dataiter = iter(self.trainset)
 
@@ -345,7 +347,7 @@ class PrimaryCloud(Node):
         train_batch_size=32,
         learning_mode="H",
         num_threads=1,
-        *args,
+        num_data_workers=4,
     ):
         self.instantiate(
             rank,
@@ -360,7 +362,7 @@ class PrimaryCloud(Node):
             train_batch_size,
             learning_mode,
             num_threads,
-            *args,
+            num_data_workers,
         )
 
         if LearningMode(self.learning_mode) == LearningMode.HYBRID:
@@ -389,6 +391,7 @@ class PrimaryCloud(Node):
         train_batch_size: int,
         learning_mode: str,
         num_threads: int,
+        num_data_workers: int,
     ):
         logging.info("Started process.")
 
@@ -404,6 +407,7 @@ class PrimaryCloud(Node):
             train_batch_size,
             learning_mode,
             num_threads,
+            num_data_workers,
         )
 
         self.peer_deques = dict()
@@ -441,6 +445,7 @@ class PrimaryCloud(Node):
         train_batch_size: int,
         learning_mode: str,
         num_threads: int,
+        num_data_workers: int,
     ):
         self.rank = rank
         self.machine_id = machine_id
@@ -457,6 +462,7 @@ class PrimaryCloud(Node):
         self.train_batch_size = train_batch_size
         self.learning_mode = learning_mode
         self.num_threads = num_threads
+        self.num_data_workers = num_data_workers
 
     def init_dataset_model(self, dataset_configs):
         dataset_module = importlib.import_module(dataset_configs["dataset_package"])

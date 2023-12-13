@@ -129,9 +129,14 @@ class ImageNet2012(Dataset):
         logging.info("Full testset loaded.")
         self.testset = full_testset
 
-    def get_trainset(self, batch_size=8, shuffle=True):
+    def get_trainset(self, batch_size=8, shuffle=True, num_workers=1):
         if self.__training__:
-            return DataLoader(self.trainset, batch_size=batch_size, shuffle=shuffle)
+            return DataLoader(
+                self.trainset,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                num_workers=num_workers,
+            )
         raise RuntimeError("Train set not initialised!")
 
     def get_testset(self):

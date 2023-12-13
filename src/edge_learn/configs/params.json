@@ -10,5 +10,6 @@
   "train_batch_size": 256,
   "learning_mode": "H",
   "num_threads_cloud": 40,
-  "num_threads_edge": 10
+  "num_threads_edge": 10,
+  "num_worker_threads": 4
 }
