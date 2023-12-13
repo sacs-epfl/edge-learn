@@ -83,6 +83,7 @@ class PrimaryCloud(Node):
                 batch_size=self.train_batch_size,
                 shuffle=True,
                 num_workers=self.num_data_workers,
+                pin_memory=True,
             )
             self.dataiter = iter(self.trainset)
 
