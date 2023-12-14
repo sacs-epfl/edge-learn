@@ -32,7 +32,7 @@ RUN apt-get install -y git
 # Install Apex from the source
 RUN git clone https://github.com/NVIDIA/apex \
     && cd apex \
-    && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+    && pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
 # Add edge_learn & decentralizepy to PYTHONPATH
 ENV PYTHONPATH "${PYTHONPATH}:/"
