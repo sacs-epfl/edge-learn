@@ -5,7 +5,13 @@ FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python
-RUN apt-get update && apt-get upgrade -y && apt-get install -y python3.9
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.9 python3.9-dev python3.9-distutils && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1 && \
+    update-alternatives --set python3 /usr/bin/python3.9
 
 # Python check
 RUN python3 --version
