@@ -1,5 +1,8 @@
 FROM python:3.9
 
+# Set CUDA_HOME environment variable
+ENV CUDA_HOME=/usr/local/cuda
+
 # Move files to container
 COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
 
