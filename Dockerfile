@@ -26,6 +26,9 @@ COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install -r /edge_learn/requirements.txt
 
+# Install git
+RUN apt-get install -y git
+
 # Install Apex from the source
 RUN git clone https://github.com/NVIDIA/apex \
     && cd apex \
