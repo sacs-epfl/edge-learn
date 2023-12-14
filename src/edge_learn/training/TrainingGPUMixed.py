@@ -22,6 +22,7 @@ class Training:
         loss,
         log_dir,
         gpu_mapping_filepath="",
+        mixed_precision=0,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -45,6 +46,19 @@ class Training:
             primary_device = f"cuda:{self.gpus_to_use[0]}"
             self.model = self.model.to(primary_device)
             self.model = DataParallel(self.model, device_ids=self.gpus_to_use)
+
+            # Mixed precision
+            opt_level = "00"
+            if mixed_precision == 1:
+                opt_level = "01"
+            elif mixed_precision == 2:
+                opt_level = "02"
+            elif mixed_precision == 3:
+                opt_level = "03"
+
+            self.model, self.optimizer = amp.initialize(
+                self.model, self.optimizer, opt_level
+            )
 
     # Assuming self.model is already wrapped with DataParallel
     def trainstep(self, data, target):

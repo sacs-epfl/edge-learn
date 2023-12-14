@@ -526,9 +526,6 @@ class PrimaryCloud(Node):
 
     def init_trainer(self, train_configs):
         # Check if do mixed precision
-        if "mixed_precision" in train_configs.keys():
-            self.init_mixed_precision(train_configs["mixed_precision"])
-
         train_module = importlib.import_module(train_configs["training_package"])
         train_class = getattr(train_module, train_configs["training_class"])
 
@@ -547,7 +544,6 @@ class PrimaryCloud(Node):
                 "loss",
                 "loss_package",
                 "loss_class",
-                "mixed_precision",
             ],
         )
         self.trainer = train_class(
@@ -559,19 +555,6 @@ class PrimaryCloud(Node):
             self.loss,
             self.log_dir,
             **train_params,
-        )
-
-    def init_mixed_precision(self, opt_level_enum):
-        opt_level = "00"
-        if opt_level_enum == 1:
-            opt_level = "01"
-        elif opt_level == 2:
-            opt_level = "02"
-        elif opt_level == 3:
-            opt_level = "03"
-
-        self.model, self.optimizer = amp.initialize(
-            self.model, self.optimizer, opt_level
         )
 
     def init_lr_scheduler(self, scheduler_configs):
