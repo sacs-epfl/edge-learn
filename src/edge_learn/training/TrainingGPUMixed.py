@@ -45,7 +45,6 @@ class Training:
         if len(self.gpus_to_use) != 0:
             primary_device = f"cuda:{self.gpus_to_use[0]}"
             self.model = self.model.to(primary_device)
-            self.model = DataParallel(self.model, device_ids=self.gpus_to_use)
 
             # Mixed precision
             opt_level = "00"
@@ -59,6 +58,8 @@ class Training:
             self.model, self.optimizer = amp.initialize(
                 self.model, self.optimizer, opt_level
             )
+
+            self.model = DataParallel(self.model, device_ids=self.gpus_to_use)
 
     # Assuming self.model is already wrapped with DataParallel
     def trainstep(self, data, target):
