@@ -5,13 +5,16 @@ FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python
-RUN apt-get update && apt-get upgrade -y && apt-get install -y python3.9 python3-pip
+RUN apt-get update && apt-get upgrade -y && apt-get install -y python3.9
+
+# Python check
+RUN python3 --version
 
 # Move files to container
 COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
 
 # Install dependencies
-RUN pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 RUN pip install -r /edge_learn/requirements.txt
 
 # Install Apex from the source
