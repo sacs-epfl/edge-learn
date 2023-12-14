@@ -1,7 +1,8 @@
-FROM python:3.9
+# Use an NVIDIA CUDA base image with compatible Python version
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 
-# Set CUDA_HOME environment variable
-ENV CUDA_HOME=/usr/local/cuda
+# Install Python
+RUN apt-get update && apt-get install -y python3.9 python3-pip
 
 # Move files to container
 COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
