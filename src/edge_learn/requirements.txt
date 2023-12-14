@@ -6,3 +6,4 @@ matplotlib==3.7.2
 torchvision==0.15.2
 pyzmq==25.1.0
 scikit-learn
+apex

@@ -5,6 +5,7 @@ from collections import deque
 import logging
 import importlib
 from ast import literal_eval
+from apex import amp
 
 from time import perf_counter
 
@@ -417,8 +418,9 @@ class PrimaryCloud(Node):
         self.init_dataset_model(config["DATASET"])
         self.init_comm(config["COMMUNICATION"])
         self.init_optimizer(config["OPTIMIZER_PARAMS"])
-        self.init_lr_scheduler(config["LR_SCHEDULER"])
         self.init_trainer(config["TRAIN_PARAMS"])
+        if "LR_SCHEDULER" in config:
+            self.init_lr_scheduler(config["LR_SCHEDULER"])
 
         self.message_queue = dict()
         self.barrier = set()
@@ -520,6 +522,56 @@ class PrimaryCloud(Node):
         # Instantiate the optimizer with the prepared parameters
         self.optimizer = self.optimizer_class(
             self.model.parameters(), **self.optimizer_params
+        )
+
+    def init_trainer(self, train_configs):
+        # Check if do mixed precision
+        if "mixed_precision" in train_configs.keys():
+            self.init_mixed_precision(train_configs["mixed_precision"])
+
+        train_module = importlib.import_module(train_configs["training_package"])
+        train_class = getattr(train_module, train_configs["training_class"])
+
+        loss_package = importlib.import_module(train_configs["loss_package"])
+        if "loss_class" in train_configs.keys():
+            loss_class = getattr(loss_package, train_configs["loss_class"])
+            self.loss = loss_class()
+        else:
+            self.loss = getattr(loss_package, train_configs["loss"])
+
+        train_params = utils.remove_keys(
+            train_configs,
+            [
+                "training_package",
+                "training_class",
+                "loss",
+                "loss_package",
+                "loss_class",
+                "mixed_precision",
+            ],
+        )
+        self.trainer = train_class(
+            self.rank,
+            self.machine_id,
+            self.mapping,
+            self.model,
+            self.optimizer,
+            self.loss,
+            self.log_dir,
+            **train_params,
+        )
+
+    def init_mixed_precision(self, opt_level_enum):
+        opt_level = "00"
+        if opt_level_enum == 1:
+            opt_level = "01"
+        elif opt_level == 2:
+            opt_level = "02"
+        elif opt_level == 3:
+            opt_level = "03"
+
+        self.model, self.optimizer = amp.initialize(
+            self.model, self.optimizer, opt_level
         )
 
     def init_lr_scheduler(self, scheduler_configs):
