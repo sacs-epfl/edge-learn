@@ -5,6 +5,4 @@ smallworld==0.1.0
 matplotlib==3.7.2
 torchvision==0.15.2
 pyzmq==25.1.0
-scikit-learn
-apex
-pyramid
+scikit-learn==1.3.2
