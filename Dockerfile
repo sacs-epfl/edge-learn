@@ -16,6 +16,9 @@ RUN apt-get update && \
 # Python check
 RUN python3 --version
 
+# Install pip3 for Python 3.9
+RUN apt-get install -y python3-pip
+
 # Move files to container
 COPY src/edge_learn/requirements.txt /edge_learn/requirements.txt
 
