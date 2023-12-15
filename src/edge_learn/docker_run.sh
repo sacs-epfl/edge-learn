@@ -47,7 +47,7 @@ create_client() {
     local base_result_dir=$2
     mkdir -p $base_result_dir/client_$i
     echo "Running client $i"
-    docker run $(get_gpu_flag) -d -p ${client_ports[$i]}:1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --name client_$i-$machine_id edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
+    docker run $(get_gpu_flag) -d -p ${client_ports[$i]}:1000 -v $base_result_dir/client_$i:/results -v $3:/edge_learn -v $4:/decentralizepy -v $5:/data --shm-size=8g --name client_$i-$machine_id edge_learn:latest python3 create_node.py --node_type client --rank $((i + 1)) --config_dir config
 }
 
 create_clients() {
