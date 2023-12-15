@@ -16,6 +16,9 @@ parser.add_argument(
     type=str,
     help="List of file paths with their corresponding colors and legend name, separated by a comma. For example: 'path/to/file1,red,CIFAR path/to/file2,blue,ImageNet'",
 )
+parser.add_argument(
+    "-d", "--divisor", type=float, help="What do divide all x's by", default=1
+)
 args = parser.parse_args()
 
 file_paths_colors_legends = []
@@ -47,7 +50,7 @@ def main():
     for file_path, color, legend_name in file_paths_colors_legends:
         x, y = read_x_y_file(file_path)
         plt.plot(
-            [float(xx) for xx in x],
+            [float(xx) / args.divisor for xx in x],
             [float(yy) for yy in y],
             color=color,
             label=legend_name,

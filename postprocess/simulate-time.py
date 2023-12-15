@@ -14,6 +14,7 @@ WARMUP = 10
 # PARSING
 parser = argparse.ArgumentParser(description="Take data and turn into time series")
 parser.add_argument("dir_path", type=str, help="Path to folder with files")
+parser.add_argument("test_frequency", type=int, help="How frequently did you test")
 args = parser.parse_args()
 
 
@@ -38,6 +39,11 @@ def include_warmup_to_time(round_time_dict):
 
     for i in range(1, WARMUP + 1):
         round_time_dict[str(i)] = average_round_time
+
+    num_tests = len(round_time_dict.keys()) // args.test_frequency
+    for i in range(num_tests + 1):
+        round_time_dict[str(i * args.test_frequency)] = average_round_time
+
     return round_time_dict
 
 
